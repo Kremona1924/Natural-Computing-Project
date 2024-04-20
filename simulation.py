@@ -18,10 +18,14 @@ AGENT_SPEED = 2  # Adjust speed as needed
 
 # Define Agent class
 class Agent:
-    def __init__(self, x, y, params):
+    def __init__(self, id, x, y, params):
+        self.id = id
         self.params = params
         self.xpos = x
         self.ypos = y
+        # Set alignment score to infinity and fitness to 0
+        self.alignment_score = float('inf')
+        self.fitness = 0
         # Generate random angle
         angle = random.uniform(0, 2*math.pi)
         # Calculate velocity components based on angle and speed
@@ -126,12 +130,12 @@ class Agent:
         pygame.draw.polygon(screen, AGENT_COLOR, [front_point, back_left, back_right])
 
 class boids_sim:
-    def __init__(self, pop_size, layer_sizes) -> None:
+    def __init__(self, pop) -> None:
         #random.seed(1) # Ensure each sim starts the same
-        self.pop_size = pop_size
-        self.agents = np.array([Agent(random.randint(0, WIDTH), random.randint(0, HEIGHT), NN.initialise_network(layer_sizes)) for i in range(self.pop_size)])
+        self.pop_size = len(pop)
+        self.agents = np.array([Agent(agent_params["id"], random.randint(0, WIDTH), random.randint(0, HEIGHT), agent_params["params"]) for agent_params in pop])
         for i, agent in enumerate(self.agents):
-            agent.set_agents(self.agents[np.arange(pop_size) != i])
+            agent.set_agents(self.agents[np.arange(self.pop_size) != i])
        
     def run(self, steps):
         order = []
@@ -151,7 +155,7 @@ class boids_sim:
         return math.sqrt(vx**2 + vy**2)/len(agents)
 
 
-    def run_with_screen(self, steps):
+    def run_with_screen(self, steps, rtrn=False):
         # Initialize pygame
         pygame.init()
         screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -179,6 +183,9 @@ class boids_sim:
         plt.show()
         pygame.quit()
 
+        if rtrn:
+            return self.agents
+
 # Uncomment to run with screen
-sim = boids_sim(20, [4,1])
-sim.run_with_screen(10000)
+# sim = boids_sim(20, [4,1])
+# sim.run_with_screen(10000)

@@ -1,14 +1,14 @@
 from Evolutionary import EA
 
 ### Hyperparameters
-num_generations = 100
-pop_size = 1000
+pop_size = 40
+num_generations = 10
 mutation_rate = 0.05
-tournament_size = 50
+tournament_size = 5
 
 def main():
     pop_size = 100
-    layer_sizes = [2, 3, 1]
+    layer_sizes = [4, 3, 1]
     ea = EA(pop_size, layer_sizes)
 
     mutation_rate = 0.05
