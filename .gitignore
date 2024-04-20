@@ -1,0 +1,40 @@
+# Ignores user specific files in source control such as cache and logs 
+
+# Ignore Python bytecode files
+__pycache__/
+
+# Ignore system-specific Python caches
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore environment-specific settings
+.env
+
+# Ignore IDE or editor files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+
+# Ignore compiled binaries and libraries
+*.dll
+*.so
+*.dylib
+
+# Ignore logs and temporary files
+*.log
+*.tmp
+*.swp
+
+# Ignore package directories (e.g., node_modules for JavaScript projects)
+node_modules/
+
+# Ignore compiled output and build artifacts
+build/
+dist/
+*.egg-info/
+
+# Ignore configuration files that contain sensitive information
+config.ini
+secrets.yml
