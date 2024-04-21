@@ -155,7 +155,7 @@ class boids_sim:
         return math.sqrt(vx**2 + vy**2)/len(agents)
 
 
-    def run_with_screen(self, steps, rtrn=False):
+    def run_with_screen(self, steps, plot_chart=False, rtrn=False):
         # Initialize pygame
         pygame.init()
         screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -179,8 +179,10 @@ class boids_sim:
             pygame.display.flip()
             clock.tick(60)
 
-        plt.plot(order)
-        plt.show()
+        if plot_chart:
+            plt.plot(order)
+            plt.show()
+        
         pygame.quit()
 
         if rtrn:

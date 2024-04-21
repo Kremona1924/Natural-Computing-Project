@@ -17,24 +17,24 @@ class EA:
         for id in range(pop_size):
             pop.append({"params" : NN.initialise_network(layer_sizes),
                 "fitness" : 0,
-                "alignment_score": 0,
                 "original_id": id,
                 "id" : id})
         return pop
 
-    def run(self, num_generations, mutation_rate, tournament_size, log = False):
+    def run(self, num_generations, num_steps, mutation_rate, mutation_step, tournament_size, log = False, plot_chart=False):
         for i in range(num_generations):
             sim = boids_sim(self.pop)
-            agents = sim.run_with_screen(100, rtrn=True)
+            agents = sim.run_with_screen(num_steps, plot_chart, rtrn=True)
             self.evaluate_alignment(agents)
             self.fitness(agents)
+            self.set_scores(agents)
 
             if log:
                 print("Generation: ", i)
-                print("Fittest individual: ", max(self.pop, key=lambda x: x["fitness"])["fitness"])
-            self.pop = self.create_new_population(mutation_rate, tournament_size)
+                print("Fittest individual: ", min(self.pop, key=lambda x: x["fitness"])["fitness"])
+            self.pop = self.create_new_population(mutation_rate, mutation_step, tournament_size)
 
-    def evaluate_alignment(self, agents):
+    def evaluate_alignment(self, agents): # TODO alignment is only calculated from last recorded velocity of simulation, so maybe try last 10?
         global_alignment_x, global_alignment_y = self.get_global_alignment(agents)
 
         for agent in agents:
@@ -65,13 +65,18 @@ class EA:
             fitness = agent.alignment_score
             agent.fitness = fitness
 
-    
-    def create_new_population(self, mu, k):
+    def set_scores(self, agents):
+        for i in range(len(agents)):
+            self.pop[i]["fitness"] = agents[i].fitness
+
+
+
+    def create_new_population(self, mu, ms, k):
         new_pop = []
         for id in range(len(self.pop)):
             parent = self.tournament_selection(self.pop, k, 1)
             offspring = copy.deepcopy(parent)
-            self.mutate(offspring["params"], mu)
+            self.mutate(offspring["params"], mu, ms)
             offspring["id"] = id
             # TODO: Add crossover
             new_pop.append(offspring)
@@ -85,15 +90,15 @@ class EA:
             winners.append(pop[winner]) # Add fittest individual to output
         return winners[0] # TODO: fix output type to not be list when num = 1
     
-    def mutate(self, params, mutation_rate):
+    def mutate(self, params, mutation_rate, mutation_step):
         w, b = params
         for weight in w:
             if np.random.random() < mutation_rate:
-                weight += np.random.normal(0, 0.05) # TODO: set mutation size
+                weight += np.random.normal(0, mutation_step) # TODO: set mutation size
 
         for bias in b:
             if np.random.random() < mutation_rate:
-                bias += np.random.normal(0, 0.05) # TODO: set mutation size
+                bias += np.random.normal(0, mutation_step) # TODO: set mutation size
         return w, b
     
     def crossover(self, x, y):
