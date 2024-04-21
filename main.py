@@ -1,18 +1,17 @@
 from Evolutionary import EA
 
 ### Hyperparameters
-num_generations = 100
-pop_size = 1000
-mutation_rate = 0.05
-tournament_size = 50
+pop_size = 50
+layer_sizes = [4, 3, 1]
+num_generations = 10
+mutation_rate = 0.25
+mutation_step = 0.03
+tournament_size = 15
+num_steps = 500
 
+    
 def main():
-    pop_size = 100
-    layer_sizes = [2, 3, 1]
     ea = EA(pop_size, layer_sizes)
-
-    mutation_rate = 0.05
-    tournament_size = 10
-    ea.run(num_generations, mutation_rate, tournament_size, log=True)
+    ea.run(num_generations, num_steps, mutation_rate, mutation_step, tournament_size, log=True, plot_chart=False)
 
 main()
