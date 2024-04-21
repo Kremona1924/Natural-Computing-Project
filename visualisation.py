@@ -2,6 +2,12 @@ import numpy as np
 import pygame
 import NN
 
+"""
+This script lets you play around with the input to the neural network and see the output. Run the script and drag the pos and vel arrows to change
+the input the NN gets. The red arrow indicates the output of the network.
+The output is a value between [-1,1] which is represented by rotating the red arrow indicating the direction of the boid.
+"""
+
 def draw_arrow(
         surface: pygame.Surface,
         start: pygame.Vector2,
