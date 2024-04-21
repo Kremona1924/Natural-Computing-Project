@@ -1,7 +1,6 @@
-import pygame_widgets
+import numpy as np
 import pygame
-from pygame_widgets.slider import Slider
-from pygame_widgets.textbox import TextBox
+import NN
 
 def draw_arrow(
         surface: pygame.Surface,
@@ -59,14 +58,33 @@ def draw_arrow(
 
         pygame.draw.polygon(surface, color, body_verts)
 
+def get_params(filename):
+    return np.load(filename, allow_pickle=True)
+
+
+params = get_params('params.npy')
+
+if params is None:
+    print('No params found in params.npy')
+    exit()
+
 pygame.init()
 WIDTH = 1000
 HEIGHT = 600
+center = pygame.Vector2(WIDTH/2, HEIGHT/2)
 win = pygame.display.set_mode((WIDTH, HEIGHT))
 
-rectangle = pygame.rect.Rect(WIDTH/2, HEIGHT/2 - 100, 20, 20)
-rectangle_draging = False
+DRAGBOX_WIDTH = 50
+pos_drag = pygame.rect.Rect(WIDTH/2, HEIGHT/2 - 100, DRAGBOX_WIDTH, DRAGBOX_WIDTH)
+pos_dragging = False
+
+vel_drag = pygame.rect.Rect(WIDTH/2, HEIGHT/2 + 100, DRAGBOX_WIDTH, DRAGBOX_WIDTH)
+vel_dragging = False
+
 running = True
+font = pygame.font.SysFont(None, 24)
+pos_label = font.render('Pos', True, (0,0,0))
+vel_label = font.render('Vel', True, (0,0,0))
 
 while running:
     for event in pygame.event.get():
@@ -75,25 +93,56 @@ while running:
 
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:            
-                if rectangle.collidepoint(event.pos):
-                    rectangle_draging = True
+                if pos_drag.collidepoint(event.pos):
+                    pos_dragging = True
                     mouse_x, mouse_y = event.pos
-                    offset_x = rectangle.x - mouse_x
-                    offset_y = rectangle.y - mouse_y
+                    offset_x = pos_drag.x - mouse_x
+                    offset_y = pos_drag.y - mouse_y
+                elif vel_drag.collidepoint(event.pos):
+                    vel_dragging = True
+                    mouse_x, mouse_y = event.pos
+                    offset_x = vel_drag.x - mouse_x
+                    offset_y = vel_drag.y - mouse_y
 
         elif event.type == pygame.MOUSEBUTTONUP:
             if event.button == 1:            
-                rectangle_draging = False
+                pos_dragging = False
+                vel_dragging = False
 
         elif event.type == pygame.MOUSEMOTION:
-            if rectangle_draging:
+            if pos_dragging:
                 mouse_x, mouse_y = event.pos
-                rectangle.x = mouse_x + offset_x
-                rectangle.y = mouse_y + offset_y
+                pos_drag.x = mouse_x + offset_x
+                pos_drag.y = mouse_y + offset_y
+            elif vel_dragging:
+                mouse_x, mouse_y = event.pos
+                vel_drag.x = mouse_x + offset_x
+                vel_drag.y = mouse_y + offset_y
 
     win.fill((255,255,255))
 
-    pygame.draw.rect(win, (255,255,255), rectangle)
-    draw_arrow( win, pygame.Vector2(WIDTH/2, HEIGHT/2), pygame.Vector2(rectangle.x + 10, rectangle.y+10), (0,0,0), 5, 20, 10)
+    pygame.draw.rect(win, (255,255,255), pos_drag)
+    pygame.draw.rect(win, (255,255,255), vel_drag)
+
+    pos = pygame.Vector2(pos_drag.x + DRAGBOX_WIDTH/2, pos_drag.y+DRAGBOX_WIDTH/2)
+    vel = pygame.Vector2(vel_drag.x + DRAGBOX_WIDTH/2, vel_drag.y+DRAGBOX_WIDTH/2)
+    draw_arrow( win, pygame.Vector2(WIDTH/2, HEIGHT/2), pos, (0,0,0), 5, 20, 10)
+    draw_arrow( win, pygame.Vector2(WIDTH/2, HEIGHT/2), vel, (0,0,0), 5, 20, 10)
+
+    pos_dir = pos - center
+    pos_dir = pos_dir.normalize()
+    win.blit(pos_label, pos + pos_dir * 15 - (12, 5))
+
+    vel_dir = vel - center
+    vel_dir = vel_dir.normalize()
+    win.blit(vel_label, vel + vel_dir * 15 - (12,5))
+
+    NN_input = np.array([pos.x - center.x , center.y - pos.y , vel.x - center.x, center.y - vel.y]) / 100.0
+    theta = NN.feed_forward(params, NN_input)
+
+    rotation_matrix = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
+    rotated_velocity = np.matmul(rotation_matrix, np.array([0.0, -1.0]))
+
+    draw_arrow(win, center, center + rotated_velocity * 100, (255,0,0),5,20,10)
 
     pygame.display.flip()
