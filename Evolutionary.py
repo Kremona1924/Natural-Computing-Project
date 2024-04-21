@@ -33,6 +33,7 @@ class EA:
                 print("Generation: ", i)
                 print("Fittest individual: ", min(self.pop, key=lambda x: x["fitness"])["fitness"])
             self.pop = self.create_new_population(mutation_rate, mutation_step, tournament_size)
+        self.save_params(min(self.pop, key=lambda x: x["fitness"]))
 
     def evaluate_alignment(self, agents): # TODO alignment is only calculated from last recorded velocity of simulation, so maybe try last 10?
         global_alignment_x, global_alignment_y = self.get_global_alignment(agents)
@@ -110,3 +111,7 @@ class EA:
         with open("fitness_over_time.txt", "a") as f:
             np.savetxt(f,pop_fitness, newline=' ')
             f.write("\n")
+    
+    def save_params(self, agent):
+        # Save the parameters of the agent
+        np.save('params.npy', np.array(agent["params"], dtype=object), allow_pickle=True)
