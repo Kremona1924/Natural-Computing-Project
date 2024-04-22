@@ -191,3 +191,5 @@ class boids_sim:
 # Uncomment to run with screen
 # sim = boids_sim(20, [4,1])
 # sim.run_with_screen(10000)
+
+# just some random text for me to understand github
