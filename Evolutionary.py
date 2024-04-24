@@ -26,6 +26,7 @@ class EA:
             sim = boids_sim(self.pop)
             agents = sim.run_with_screen(num_steps, plot_chart, rtrn=True)
             self.evaluate_alignment(agents)
+            self.evaluate_cohesion(agents)
             self.fitness(agents)
             self.set_scores(agents)
 
@@ -56,13 +57,31 @@ class EA:
             tot_yvel += agent.yvel/agent_magnitude
         
         return tot_xvel/len(agents), tot_yvel/len(agents)
+    
+    def evaluate_cohesion(self, agents):
+        for agent in agents:
+            neighbors = agent.get_neighbors(agents)
+            # for now an if statement because not sure if we want to look at only local neighbors
+            if neighbors:
+                total_dist = 0
+                for n in neighbors:
+                    # distance to each neighbor
+                    dist = math.sqrt((agent.xpos - n.xpos) ** 2 + (agent.ypos - n.ypos) ** 2)
+                    total_dist += dist
+
+                avg_dist = total_dist / len(neighbors)
+                # use inverse since shorter distance means better cohesion
+                agent.cohesion_score = 1 / (1 + avg_dist)  
+            else:
+                agent.cohesion_score = 0  # no cohesion if no neighbors
+
 
     def fitness(self, agents): #TODO change fitness function
         # Calculates fitness based on only alignment score 
         # Changed tournament criterion to argmin for now
         
         for agent in agents:
-            fitness = agent.alignment_score
+            fitness = agent.alignment_score + agent.cohesion_score
             agent.fitness = fitness
 
     def set_scores(self, agents):
