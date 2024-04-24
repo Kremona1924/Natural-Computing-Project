@@ -5,6 +5,9 @@ import math
 import numpy as np
 import time
 import NN
+import json
+import os
+
 
 # Define constants
 WIDTH = 450
@@ -136,6 +139,22 @@ class boids_sim:
         self.agents = np.array([Agent(agent_params["id"], random.randint(0, WIDTH), random.randint(0, HEIGHT), agent_params["params"]) for agent_params in pop])
         for i, agent in enumerate(self.agents):
             agent.set_agents(self.agents[np.arange(self.pop_size) != i])
+        
+    def log_state(self, agents, filename="simulation_log.json"):
+        state_data = []
+        for agent in agents:
+            agent_data = {
+                "id": agent.id,
+                "xpos": agent.xpos,
+                "ypos": agent.ypos,
+                "xvel": agent.xvel,
+                "yvel": agent.yvel
+            }
+            state_data.append(agent_data)
+        
+        with open(filename, "a") as file:
+            json.dump(state_data, file)
+            file.write("\n")  # new line each timestamp
        
     def run(self, steps):
         order = []
@@ -155,7 +174,11 @@ class boids_sim:
         return math.sqrt(vx**2 + vy**2)/len(agents)
 
 
-    def run_with_screen(self, steps, plot_chart=False, rtrn=False):
+    def run_with_screen(self, steps, plot_chart=False, rtrn=False, log=False, filename="simulation_log.json"):
+        # # This does not work well, it removes the data in the file from the previous generations
+        # if log:
+        #     open(filename, 'w').close()
+
         # Initialize pygame
         pygame.init()
         screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -168,6 +191,9 @@ class boids_sim:
             for agent in self.agents:
                 agent.move()
                 agent.draw(screen)
+
+            if log:
+                self.log_state(self.agents, filename)
 
             order.append(self.compute_order(self.agents))
 

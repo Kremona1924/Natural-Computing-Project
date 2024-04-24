@@ -24,7 +24,7 @@ class EA:
     def run(self, num_generations, num_steps, mutation_rate, mutation_step, tournament_size, log = False, plot_chart=False):
         for i in range(num_generations):
             sim = boids_sim(self.pop)
-            agents = sim.run_with_screen(num_steps, plot_chart, rtrn=True)
+            agents = sim.run_with_screen(num_steps, plot_chart, rtrn=True, log=log, filename="simulation_log.json")
             self.evaluate_alignment(agents)
             self.evaluate_cohesion(agents)
             self.fitness(agents)

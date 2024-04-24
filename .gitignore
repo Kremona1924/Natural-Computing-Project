@@ -38,3 +38,6 @@ dist/
 # Ignore configuration files that contain sensitive information
 config.ini
 secrets.yml
+
+# Ignore log file
+simulation_log.json
