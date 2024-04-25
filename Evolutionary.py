@@ -60,6 +60,7 @@ class EA:
     
     def evaluate_cohesion(self, agents):
         for agent in agents:
+            # also needs neighbors
             neighbors = agent.get_neighbors(agents)
             # for now an if statement because not sure if we want to look at only local neighbors
             if neighbors:
