@@ -75,7 +75,11 @@ def replay_simulation(filename="simulation_log.json"):
                 draw_arrow(win, start, end, pygame.Color(0, 0, 0))
 
             pygame.display.flip()
+            # add some sort of delay or something
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     return  # Stop de replay als het venster wordt gesloten
+                
+if __name__ == "__main__":
+    replay_simulation()  # Call the function to start the replay

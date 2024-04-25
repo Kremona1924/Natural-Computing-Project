@@ -176,6 +176,7 @@ class boids_sim:
 
     def run_with_screen(self, steps, plot_chart=False, rtrn=False, log=False, filename="simulation_log.json"):
         # # This does not work well, it removes the data in the file from the previous generations
+        # # For now remove the log manually
         # if log:
         #     open(filename, 'w').close()
 
