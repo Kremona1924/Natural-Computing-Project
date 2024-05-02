@@ -21,10 +21,10 @@ class EA:
                 "id" : id})
         return pop
 
-    def run(self, num_generations, num_steps, mutation_rate, mutation_step, tournament_size, log = False, plot_chart=False):
+    def run(self, num_generations, num_steps, mutation_rate, mutation_step, tournament_size, log = False, plot_chart=False, show_screen=True):
         for i in range(num_generations):
             sim = boids_sim(self.pop)
-            agents = sim.run_with_screen(num_steps, plot_chart, rtrn=True, log=log, filename="simulation_log.json")
+            agents = sim.run_with_screen(num_steps, plot_chart = plot_chart, show_screen=show_screen, rtrn=True, log=log, filename="simulation_log.json")
             self.evaluate_alignment(agents)
             self.evaluate_cohesion(agents)
             self.fitness(agents)
@@ -89,7 +89,6 @@ class EA:
     def set_scores(self, agents):
         for i in range(len(agents)):
             self.pop[i]["fitness"] = agents[i].fitness
-
 
 
     def create_new_population(self, mu, ms, k):

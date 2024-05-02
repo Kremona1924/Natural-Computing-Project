@@ -174,24 +174,27 @@ class boids_sim:
         return math.sqrt(vx**2 + vy**2)/len(agents)
 
 
-    def run_with_screen(self, steps, plot_chart=False, rtrn=False, log=False, filename="simulation_log.json"):
+    def run_with_screen(self, steps, show_screen = True, plot_chart=False, rtrn=False, log=False, filename="simulation_log.json"):
         # # This does not work well, it removes the data in the file from the previous generations
         # # For now remove the log manually
         # if log:
         #     open(filename, 'w').close()
 
         # Initialize pygame
-        pygame.init()
-        screen = pygame.display.set_mode((WIDTH, HEIGHT))
-        pygame.display.set_caption("Simple Agent Simulation")
-        clock = pygame.time.Clock()
+
+        if show_screen:
+            pygame.init()
+            screen = pygame.display.set_mode((WIDTH, HEIGHT))
+            pygame.display.set_caption("Simple Agent Simulation")
+            clock = pygame.time.Clock()
         
         order = []
         for _ in range(steps):
-            screen.fill(BG_COLOR)
-            for agent in self.agents:
-                agent.move()
-                agent.draw(screen)
+            if show_screen:
+                screen.fill(BG_COLOR)
+                for agent in self.agents:
+                    agent.move()
+                    agent.draw(screen)
 
             if log:
                 self.log_state(self.agents, filename)
@@ -199,18 +202,20 @@ class boids_sim:
             order.append(self.compute_order(self.agents))
 
             # Event handling
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    running = False
+            if show_screen:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        running = False
 
-            pygame.display.flip()
-            clock.tick(60)
+                pygame.display.flip()
+                clock.tick(60)
 
         if plot_chart:
             plt.plot(order)
             plt.show()
         
-        pygame.quit()
+        if show_screen:
+            pygame.quit()
 
         if rtrn:
             return self.agents
