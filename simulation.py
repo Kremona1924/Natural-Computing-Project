@@ -90,10 +90,13 @@ class Agent:
             avg_neighbor_pos = avg_neighbor_pos/len(neighbors)
             avg_neighbor_vel = avg_neighbor_vel/len(neighbors)
 
-            positiion_vec = avg_neighbor_pos - np.array([self.xpos, self.ypos]) # Vector from the agent to the mean neighbor position
+            position_vec = avg_neighbor_pos - np.array([self.xpos, self.ypos]) # Vector from the agent to the mean neighbor position
             velocity_vec = avg_neighbor_vel - np.array([self.xvel, self.yvel]) # Difference in velocity between agent and neighbors
+
+            position_vec /= self.neighbor_dist
+            velocity_vec /= AGENT_SPEED
         
-            inputs = np.concatenate((positiion_vec, velocity_vec))
+            inputs = np.concatenate((position_vec, velocity_vec))
 
         angular_vel = NN.feed_forward(self.params, inputs) # Angular velocity of angent, as determined by the NN. Range = (-1, 1).
         theta = angular_vel * self.max_ang_vel
