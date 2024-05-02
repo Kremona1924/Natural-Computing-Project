@@ -41,3 +41,7 @@ secrets.yml
 
 # Ignore log file
 simulation_log.json
+
+# Ignore stored datafiles
+*.npy
+*.npz
