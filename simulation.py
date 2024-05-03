@@ -245,7 +245,7 @@ class boids_sim:
         if show_screen:
             pygame.quit()
 
-        if np.isnan(alignment_metric).any:
+        if np.isnan(alignment_metric).any():
             print("waaaa")
         
         return alignment_metric.T, cohesion_metric.T
