@@ -37,7 +37,6 @@ class EA:
         for i, agent in enumerate(self.pop):
             alignment = np.mean(alignments[i][-100:]) # Mean of last 30 alignment values for this agent
             cohesion = np.mean(cohesions[i][-100:]) # Mena of last 30 cohesion values for this agent
-            print(alignment, cohesion)
             agent["fitness"] = alignment + cohesion
 
     def create_new_population(self, mu, ms, k):
