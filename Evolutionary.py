@@ -24,11 +24,8 @@ class EA:
     def run(self, num_generations, num_steps, mutation_rate, mutation_step, tournament_size, log = False, plot_chart=False, show_screen=True):
         for i in range(num_generations):
             sim = boids_sim(self.pop)
-            agents = sim.run_with_screen(num_steps, plot_chart = plot_chart, show_screen=show_screen, rtrn=True, log=log, filename="simulation_log.json")
-            self.evaluate_alignment(agents)
-            self.evaluate_cohesion(agents)
-            self.fitness(agents)
-            self.set_scores(agents)
+            alignments, cohesions = sim.run_with_screen(num_steps, plot_chart = plot_chart, show_screen=show_screen, log=log, filename="simulation_log.json")
+            self.compute_fitness(alignments, cohesions)
 
             if log:
                 print("Generation: ", i)
@@ -36,60 +33,12 @@ class EA:
             self.pop = self.create_new_population(mutation_rate, mutation_step, tournament_size)
         self.save_params(min(self.pop, key=lambda x: x["fitness"]))
 
-    def evaluate_alignment(self, agents): # TODO alignment is only calculated from last recorded velocity of simulation, so maybe try last 10?
-        global_alignment_x, global_alignment_y = self.get_global_alignment(agents)
-
-        for agent in agents:
-            agent_magnitude = math.sqrt(agent.xvel**2 + agent.yvel**2)
-            xvel_norm = agent.xvel/agent_magnitude
-            yvel_norm = agent.yvel/agent_magnitude
-
-            agent.alignment_score = abs(xvel_norm-global_alignment_x) + abs(yvel_norm - global_alignment_y)
-            
-    
-    def get_global_alignment(self, agents):
-        # This is just a test but should probably be local (need neighbours and stuff for that)
-        tot_xvel = 0
-        tot_yvel = 0
-
-        for agent in agents:
-            agent_magnitude = math.sqrt(agent.xvel**2 + agent.yvel**2)
-            tot_xvel += agent.xvel/agent_magnitude
-            tot_yvel += agent.yvel/agent_magnitude
-        
-        return tot_xvel/len(agents), tot_yvel/len(agents)
-    
-    def evaluate_cohesion(self, agents):
-        for agent in agents:
-            # also needs neighbors
-            neighbors = agent.get_neighbors(agents)
-            # for now an if statement because not sure if we want to look at only local neighbors
-            if neighbors:
-                total_dist = 0
-                for n in neighbors:
-                    # distance to each neighbor
-                    dist = math.sqrt((agent.xpos - n.xpos) ** 2 + (agent.ypos - n.ypos) ** 2)
-                    total_dist += dist
-
-                avg_dist = total_dist / len(neighbors)
-                # use inverse since shorter distance means better cohesion
-                agent.cohesion_score = 1 / (1 + avg_dist)  
-            else:
-                agent.cohesion_score = 0  # no cohesion if no neighbors
-
-
-    def fitness(self, agents): #TODO change fitness function
-        # Calculates fitness based on only alignment score 
-        # Changed tournament criterion to argmin for now
-        
-        for agent in agents:
-            fitness = agent.alignment_score + agent.cohesion_score
-            agent.fitness = fitness
-
-    def set_scores(self, agents):
-        for i in range(len(agents)):
-            self.pop[i]["fitness"] = agents[i].fitness
-
+    def compute_fitness(self, alignments, cohesions): #TODO finetune fitness function
+        for i, agent in enumerate(self.pop):
+            alignment = np.mean(alignments[i][-100:]) # Mean of last 30 alignment values for this agent
+            cohesion = np.mean(cohesions[i][-100:]) # Mena of last 30 cohesion values for this agent
+            print(alignment, cohesion)
+            agent["fitness"] = alignment + cohesion
 
     def create_new_population(self, mu, ms, k):
         new_pop = []
