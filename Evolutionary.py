@@ -21,7 +21,8 @@ class EA:
                 "id" : id})
         return pop
 
-    def run(self, num_generations, num_steps, mutation_rate, mutation_step, tournament_size, log = False, plot_chart=False, show_screen=True):
+
+    def run(self, num_generations, num_steps, mutation_rate, mutation_step, tournament_size, log = False, plot_chart=False, save_population = False, show_screen = False):
         for i in range(num_generations):
             sim = boids_sim(self.pop)
             alignments, cohesions = sim.run_with_screen(num_steps, plot_chart = plot_chart, show_screen=show_screen, log=log, filename="simulation_log.json")
@@ -31,13 +32,22 @@ class EA:
                 print("Generation: ", i)
                 print("Fittest individual: ", min(self.pop, key=lambda x: x["fitness"])["fitness"])
             self.pop = self.create_new_population(mutation_rate, mutation_step, tournament_size)
-        self.save_params(min(self.pop, key=lambda x: x["fitness"]))
+        
+        # Run and evaluate one last time
+        agents = sim.run_with_screen(num_steps, plot_chart = plot_chart, show_screen=show_screen, log=log, filename="simulation_log.json")
+        self.evaluate_alignment(agents)
+        self.evaluate_cohesion(agents)
+        self.fitness(agents)
+        self.set_scores(agents)
+        
+        if save_population:
+            self.save_population()
 
     def compute_fitness(self, alignments, cohesions): #TODO finetune fitness function
         for i, agent in enumerate(self.pop):
             alignment = np.mean(alignments[i][-100:]) # Mean of last 30 alignment values for this agent
             cohesion = np.mean(cohesions[i][-100:]) # Mena of last 30 cohesion values for this agent
-            agent["fitness"] = alignment + cohesion
+            agent["fitness"] = cohesion
 
     def create_new_population(self, mu, ms, k):
         new_pop = []
@@ -79,6 +89,8 @@ class EA:
             np.savetxt(f,pop_fitness, newline=' ')
             f.write("\n")
     
-    def save_params(self, agent):
-        # Save the parameters of the agent
-        np.save('params.npy', np.array(agent["params"], dtype=object), allow_pickle=True)
+    def save_population(self):
+        weights = np.array([i["params"][0] for i in self.pop], dtype=object)
+        biases = np.array([i["params"][1] for i in self.pop], dtype=object)
+        fitnesses = np.array([i["fitness"] for i in self.pop], dtype=object)
+        np.savez("population_info", weights = weights, biases = biases, fitnesses = fitnesses)
