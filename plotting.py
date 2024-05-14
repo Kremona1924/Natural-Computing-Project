@@ -8,7 +8,7 @@ def plot_network_outputs():
     biases = pop_params['biases']
     outputs = []
     for i in range(len(weigts)):
-       outputs.append(NN.feed_forward((weigts[i], biases[i]), np.array([0.0,0.0,0.0,0.0])))
+       outputs.append(NN.feed_forward((weigts[i], biases[i]), np.array([1,0,0,0])))
     plt.hist(outputs)
     plt.show()
 
