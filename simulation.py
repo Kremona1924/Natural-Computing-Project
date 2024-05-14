@@ -40,7 +40,7 @@ class Agent:
         self.neighbor_dist = 100  # Adjust neighbor distance as needed
         self.fov_angle = 100 # How far back it can look up to 180 degrees
         self.turnfactor = 0.2
-        self.max_ang_vel = np.pi / 180
+        self.max_ang_vel = np.pi / 60
 
     def set_agents(self, agents):
         self.agents = agents

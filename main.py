@@ -3,11 +3,11 @@ import os
 
 ### Hyperparameters
 pop_size = 50
-layer_sizes = [4, 3, 1]
-num_generations = 10
-mutation_rate = 0.25
-mutation_step = 0.03
-tournament_size = 15
+layer_sizes = [4, 4, 3, 1]
+num_generations = 100
+mutation_rate = 0.10
+mutation_step = 0.10
+tournament_size = 2
 num_steps = 500
 
 def main():
