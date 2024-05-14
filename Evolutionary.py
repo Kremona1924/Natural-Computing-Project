@@ -34,11 +34,8 @@ class EA:
             self.pop = self.create_new_population(mutation_rate, mutation_step, tournament_size)
         
         # Run and evaluate one last time
-        agents = sim.run_with_screen(num_steps, plot_chart = plot_chart, show_screen=show_screen, log=log, filename="simulation_log.json")
-        self.evaluate_alignment(agents)
-        self.evaluate_cohesion(agents)
-        self.fitness(agents)
-        self.set_scores(agents)
+        alignments, cohesions = sim.run_with_screen(num_steps, plot_chart = plot_chart, show_screen=show_screen, log=log, filename="simulation_log.json")
+        self.compute_fitness(alignments, cohesions)
         
         if save_population:
             self.save_population()
@@ -46,8 +43,8 @@ class EA:
     def compute_fitness(self, alignments, cohesions): #TODO finetune fitness function
         for i, agent in enumerate(self.pop):
             alignment = np.mean(alignments[i][-100:]) # Mean of last 30 alignment values for this agent
-            cohesion = np.mean(cohesions[i][-100:]) # Mena of last 30 cohesion values for this agent
-            agent["fitness"] = cohesion + alignment
+            cohesion = np.mean(cohesions[i][-100:]) # Mean of last 30 cohesion values for this agent
+            agent["fitness"] = cohesion
 
     def create_new_population(self, mu, ms, k):
         new_pop = []
