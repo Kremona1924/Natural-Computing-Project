@@ -21,12 +21,14 @@ class EA:
                 "id" : id})
         return pop
 
-
-    def run(self, num_generations, num_steps, mutation_rate, mutation_step, tournament_size, log = False, plot_chart=False, save_population = False, show_screen = False):
+    def run(self, num_generations, num_steps, mutation_rate, mutation_step, tournament_size, log = False, plot_chart=False, save_population = False):
         for i in range(num_generations):
             sim = boids_sim(self.pop)
-            alignments, cohesions = sim.run_with_screen(num_steps, plot_chart = plot_chart, show_screen=show_screen, log=log, filename="simulation_log.json")
-            self.compute_fitness(alignments, cohesions)
+            agents = sim.run_with_screen(num_steps, plot_chart, rtrn=True, log=log, filename="simulation_log.json")
+            self.evaluate_alignment(agents)
+            self.evaluate_cohesion(agents)
+            self.fitness(agents)
+            self.set_scores(agents)
 
             if log:
                 print("Generation: ", i)
@@ -34,8 +36,11 @@ class EA:
             self.pop = self.create_new_population(mutation_rate, mutation_step, tournament_size)
         
         # Run and evaluate one last time
-        alignments, cohesions = sim.run_with_screen(num_steps, plot_chart = plot_chart, show_screen=show_screen, log=log, filename="simulation_log.json")
-        self.compute_fitness(alignments, cohesions)
+        agents = sim.run_with_screen(num_steps, plot_chart, rtrn=True, log=log, filename="simulation_log.json")
+        self.evaluate_alignment(agents)
+        self.evaluate_cohesion(agents)
+        self.fitness(agents)
+        self.set_scores(agents)
         
         if save_population:
             self.save_population()
