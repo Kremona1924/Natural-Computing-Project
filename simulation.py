@@ -29,7 +29,6 @@ class Agent:
         # Set alignment score to infinity and fitness to 0
         self.alignment_score = float('inf')
         self.fitness = 0
-
         # Generate random angle
         angle = random.uniform(0, 2*math.pi)
         # Calculate velocity components based on angle and speed
@@ -140,7 +139,7 @@ class boids_sim:
     def __init__(self, pop) -> None:
         #random.seed(1) # Ensure each sim starts the same
         self.pop_size = len(pop)
-        self.agents = np.array([Agent(agent_params["id"], random.uniform(0, WIDTH), random.uniform(0, HEIGHT), agent_params["params"]) for agent_params in pop])
+        self.agents = np.array([Agent(agent_params["id"], random.randint(0, WIDTH), random.randint(0, HEIGHT), agent_params["params"]) for agent_params in pop])
         for i, agent in enumerate(self.agents):
             agent.set_agents(self.agents[np.arange(self.pop_size) != i])
         
@@ -159,6 +158,14 @@ class boids_sim:
         with open(filename, "a") as file:
             json.dump(state_data, file)
             file.write("\n")  # new line each timestamp
+       
+    def run(self, steps):
+        order = []
+        for _ in range(steps):
+            for agent in self.agents:
+                agent.move()
+            order.append(self.compute_order(self.agents))
+        return order
 
     def evaluate_alignment(self):
         global_alignment_x, global_alignment_y = self.get_global_alignment()
@@ -206,49 +213,39 @@ class boids_sim:
         #     open(filename, 'w').close()
 
         # Initialize pygame
-
-        if show_screen:
-            pygame.init()
-            screen = pygame.display.set_mode((WIDTH, HEIGHT))
-            pygame.display.set_caption("Simple Agent Simulation")
-            clock = pygame.time.Clock()
+        pygame.init()
+        screen = pygame.display.set_mode((WIDTH, HEIGHT))
+        pygame.display.set_caption("Simple Agent Simulation")
+        clock = pygame.time.Clock()
         
-        alignment_metric = np.zeros((steps, len(self.agents)))
-        cohesion_metric = np.zeros((steps, len(self.agents)))
-
-        for t in range(steps):
-            cohesion_metric[t] = self.evaluate_cohesion()
-            alignment_metric[t] = self.evaluate_alignment()
-
-            if show_screen:
-                screen.fill(BG_COLOR)
-                for agent in self.agents:
-                    agent.draw(screen)
-
-                # Event handling
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        running = False
-
-                pygame.display.flip()
-                clock.tick(60)
+        order = []
+        for _ in range(steps):
+            screen.fill(BG_COLOR)
+            for agent in self.agents:
+                agent.move()
+                agent.draw(screen)
 
             if log:
                 self.log_state(self.agents, filename)
-            
-            for agent in self.agents:
-                agent.move()
+
+            order.append(self.compute_order(self.agents))
+
+            # Event handling
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+
+            pygame.display.flip()
+            clock.tick(60)
 
         if plot_chart:
-            # TODO: add appropriate plots
-            #plt.plot()
-            #plt.show()
-            pass
+            plt.plot(order)
+            plt.show()
         
-        if show_screen:
-            pygame.quit()
-        
-        return alignment_metric.T, cohesion_metric.T
+        pygame.quit()
+
+        if rtrn:
+            return self.agents
 
 # Uncomment to run with screen
 # sim = boids_sim(20, [4,1])

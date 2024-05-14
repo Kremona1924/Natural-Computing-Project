@@ -13,5 +13,4 @@ num_steps = 500
 def main():
     ea = EA(pop_size, layer_sizes)
     ea.run(num_generations, num_steps, mutation_rate, mutation_step, tournament_size, log=True, plot_chart=False, show_screen=True, save_population=True)
-
 main()
