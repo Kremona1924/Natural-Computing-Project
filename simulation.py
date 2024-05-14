@@ -167,17 +167,46 @@ class boids_sim:
             order.append(self.compute_order(self.agents))
         return order
 
-    def compute_order(self, agents):
-        vx = 0
-        vy = 0
-        for agent in agents:
-            vel_magnitude = math.sqrt(agent.xvel**2 + agent.yvel**2)
-            vx += agent.xvel/vel_magnitude
-            vy += agent.yvel/vel_magnitude
-        return math.sqrt(vx**2 + vy**2)/len(agents)
+    def evaluate_alignment(self):
+        global_alignment_x, global_alignment_y = self.get_global_alignment()
 
+        alignments = []
+        for agent in self.agents:
+            agent_magnitude = math.sqrt(agent.xvel**2 + agent.yvel**2)
+            xvel_norm = agent.xvel/agent_magnitude
+            yvel_norm = agent.yvel/agent_magnitude
 
-    def run_with_screen(self, steps, plot_chart=False, rtrn=False, log=False, filename="simulation_log.json"):
+            alignments.append(np.abs(xvel_norm-global_alignment_x) + np.abs(yvel_norm - global_alignment_y))
+
+        return alignments
+    
+    def get_global_alignment(self):
+        tot_xvel = 0
+        tot_yvel = 0
+
+        for agent in self.agents:
+            agent_magnitude = math.sqrt(agent.xvel**2 + agent.yvel**2)
+            tot_xvel += agent.xvel/agent_magnitude
+            tot_yvel += agent.yvel/agent_magnitude
+        return tot_xvel/len(self.agents), tot_yvel/len(self.agents)
+    
+    def evaluate_cohesion(self):
+        # Cohesion is now defined as the mean distance to all boids per agent
+        # TODO: evaluate and tune this measure of cohesion
+        agent_positions = np.array([[agent.xpos, agent.ypos] for agent in self.agents])
+        agent_positions /= float(max(WIDTH, HEIGHT)) # Scale positions by screen size to fall in range [0,1]
+        dist_matrix = self.compute_dist_matrix(agent_positions)
+        cohesion = np.mean(np.sort(dist_matrix, axis=1)[:, :5], axis=1)
+        return cohesion
+        
+    def compute_dist_matrix(self, X):
+        # Fast distance matrix calculation using numpy, based on https://jaykmody.com/blog/distance-matrices-with-numpy/
+        x2 = np.sum(X**2, axis=1)
+        xy = np.matmul(X, X.T)
+        dist_sq = x2.reshape(-1, 1) - 2*xy + x2
+        return np.sqrt(np.maximum(dist_sq, 0))
+
+    def run_with_screen(self, steps, show_screen = True, plot_chart=False, log=False, filename="simulation_log.json"):
         # # This does not work well, it removes the data in the file from the previous generations
         # # For now remove the log manually
         # if log:
