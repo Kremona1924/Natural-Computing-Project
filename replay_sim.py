@@ -3,8 +3,8 @@ import json
 from pygame.math import Vector2
 
 pygame.init()
-WIDTH = 1000
-HEIGHT = 600
+WIDTH = 450
+HEIGHT = 450
 win = pygame.display.set_mode((WIDTH, HEIGHT))
 
 def draw_arrow(
