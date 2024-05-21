@@ -128,8 +128,6 @@ class Agent:
         back_right = (self.xpos + AGENT_SIZE * math.cos(direction_angle - math.pi * 3/4),
                     self.ypos + AGENT_SIZE * math.sin(direction_angle-math.pi*3/4))
         
-        if self.id == 1:
-            pygame.draw.circle(screen, pygame.Color(100,0,0,100), (int(self.xpos), int(self.ypos)), self.neighbor_dist)
         pygame.draw.polygon(screen, AGENT_COLOR, [front_point, back_left, back_right])
 
 class boids_sim:
@@ -203,8 +201,6 @@ class boids_sim:
         
         alignment_metric = np.zeros((steps, len(self.agents)))
         cohesion_metric = np.zeros((steps, len(self.agents)))
-
-        mean_n = []
 
         for t in range(steps):
 
