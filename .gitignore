@@ -45,3 +45,4 @@ simulation_log.json
 # Ignore stored datafiles
 *.npy
 *.npz
+*.txt
