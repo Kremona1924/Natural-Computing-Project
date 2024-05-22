@@ -19,6 +19,16 @@ BG_COLOR = (255, 255, 255)
 AGENT_COLOR = (0, 0, 0)
 AGENT_SPEED = 2  # Adjust speed as needed
 
+def angle(v1, v2):
+    # Calculate the angle between the two vectors
+    dot_product = np.dot(v1, v2)
+    norms = np.linalg.norm(v1) * np.linalg.norm(v2)
+    angle_radians = np.arccos(np.clip(dot_product / norms, -1, 1)) # Clip between -1 and 1. Needed due to numerical inaccuracies
+
+    # Convert angle from radians to degrees
+    angle_degrees = np.degrees(angle_radians)
+    return angle_degrees
+
 # Define Agent class
 class Agent:
     def __init__(self, id, x, y, params):
@@ -26,9 +36,6 @@ class Agent:
         self.params = params
         self.xpos = x
         self.ypos = y
-        # Set alignment score to infinity and fitness to 0
-        self.alignment_score = float('inf')
-        self.fitness = 0
 
         # Generate random angle
         angle = random.uniform(0, 2*math.pi)
@@ -42,9 +49,6 @@ class Agent:
         self.turnfactor = 0.2
         self.max_ang_vel = np.pi / 60
 
-    def set_agents(self, agents):
-        self.agents = agents
-
     def angle_between_agents(self, agent_pos):
         # Calculate vectors between the agents
         vec_agent1 = np.array([self.xvel, self.yvel])  # Velocity vector of agent 1
@@ -54,16 +58,7 @@ class Agent:
         if np.linalg.norm(vec_agent2) < AGENT_SIZE: 
             return 0
 
-        # Calculate the angle between the two vectors
-        dot_product = np.dot(vec_agent1, vec_agent2)
-        norms = np.linalg.norm(vec_agent1) * np.linalg.norm(vec_agent2)
-
-        angle_radians = np.arccos(np.clip(dot_product / norms, -1, 1)) # Clip between -1 and 1. Needed due to numerical inaccuracies
-
-        # Convert angle from radians to degrees
-        angle_degrees = np.degrees(angle_radians)
-        
-        return angle_degrees
+        return angle(vec_agent1, vec_agent2)
 
     def get_neighbors(self, agents):
         neighbors = []
@@ -75,8 +70,7 @@ class Agent:
                     neighbors.append(agent)
         return neighbors 
 
-    def move(self):
-        neighbors = self.get_neighbors(self.agents)
+    def move(self, neighbors):
         avg_neighbor_pos = np.zeros(2)
         avg_neighbor_vel = np.zeros(2)
 
@@ -141,8 +135,6 @@ class boids_sim:
         #random.seed(1) # Ensure each sim starts the same
         self.pop_size = len(pop)
         self.agents = np.array([Agent(agent_params["id"], random.uniform(0, WIDTH), random.uniform(0, HEIGHT), agent_params["params"]) for agent_params in pop])
-        for i, agent in enumerate(self.agents):
-            agent.set_agents(self.agents[np.arange(self.pop_size) != i])
         
     def log_state(self, agents, filename="simulation_log.json"):
         state_data = []
@@ -160,36 +152,30 @@ class boids_sim:
             json.dump(state_data, file)
             file.write("\n")  # new line each timestamp
 
-    def evaluate_alignment(self):
-        global_alignment_x, global_alignment_y = self.get_global_alignment()
+    def evaluate_alignment(self, agent, neighbors):
 
-        alignments = []
-        for agent in self.agents:
-            agent_magnitude = math.sqrt(agent.xvel**2 + agent.yvel**2)
-            xvel_norm = agent.xvel/agent_magnitude
-            yvel_norm = agent.yvel/agent_magnitude
-
-            alignments.append(np.abs(xvel_norm-global_alignment_x) + np.abs(yvel_norm - global_alignment_y))
-
-        return alignments
+        # If there are no neighbors, alignment is undefined, return 1 in that case (worst possible value)
+        if len(neighbors) == 0:
+            return 1.0
     
-    def get_global_alignment(self):
-        tot_xvel = 0
-        tot_yvel = 0
+        neighbors_xvel = 0.0
+        neighbors_yvel = 0.0 
+        for n in neighbors:
+            neighbors_xvel += n.xvel
+            neighbors_yvel += n.yvel
+        neighbors_xvel /= len(neighbors)
+        neighbors_yvel /= len(neighbors)
 
-        for agent in self.agents:
-            agent_magnitude = math.sqrt(agent.xvel**2 + agent.yvel**2)
-            tot_xvel += agent.xvel/agent_magnitude
-            tot_yvel += agent.yvel/agent_magnitude
-        return tot_xvel/len(self.agents), tot_yvel/len(self.agents)
-    
+        # Return alignment as the angle between the agent velocity and the mean neighbor velocity, scaled to [0,1], 0 being perfect alignment
+        return angle((agent.xvel, agent.yvel), (neighbors_xvel, neighbors_yvel)) / 180.0
+        
     def evaluate_cohesion(self):
         # Cohesion is now defined as the mean distance to all boids per agent
         # TODO: evaluate and tune this measure of cohesion
         agent_positions = np.array([[agent.xpos, agent.ypos] for agent in self.agents])
         agent_positions /= float(max(WIDTH, HEIGHT)) # Scale positions by screen size to fall in range [0,1]
         dist_matrix = self.compute_dist_matrix(agent_positions)
-        cohesion = np.mean(np.sort(dist_matrix, axis=1)[:, :5], axis=1)
+        cohesion = np.mean(np.sort(dist_matrix, axis=1)[:, 1:7], axis=1) # cohesion is the mean dist to the 5 closest boids (excluding itself)
         return cohesion
         
     def compute_dist_matrix(self, X):
@@ -217,8 +203,6 @@ class boids_sim:
         cohesion_metric = np.zeros((steps, len(self.agents)))
 
         for t in range(steps):
-            cohesion_metric[t] = self.evaluate_cohesion()
-            alignment_metric[t] = self.evaluate_alignment()
 
             if show_screen:
                 screen.fill(BG_COLOR)
@@ -236,9 +220,13 @@ class boids_sim:
             if log:
                 self.log_state(self.agents, filename)
             
-            for agent in self.agents:
-                agent.move()
+            cohesion_metric[t] = self.evaluate_cohesion()
 
+            for i, agent in enumerate(self.agents):
+                neighbors = agent.get_neighbors(self.agents[np.arange(self.pop_size) != i]) # Exclude the agent itself from the neighbors
+                alignment_metric[t][i] = self.evaluate_alignment(agent, neighbors)
+                agent.move(neighbors)
+        
         if plot_chart:
             # TODO: add appropriate plots
             #plt.plot()
