@@ -22,8 +22,9 @@ class EA:
         return pop
 
 
-    def run(self, num_generations, num_steps, mutation_rate, mutation_step, tournament_size, log = False, plot_chart=False, save_population = False, show_screen = False):
+    def run(self, num_generations, num_steps, mutation_rate, mutation_step, tournament_size, log = False, plot_chart=False, save_population = False, show_screen = False, save_file_extension = ""):
         for i in range(num_generations):
+            print("In generation ", i)
             sim = boids_sim(self.pop)
             alignments, cohesions = sim.run_with_screen(num_steps, plot_chart = plot_chart, show_screen=show_screen, log=log, filename="simulation_log.json")
             self.compute_fitness(alignments, cohesions)
@@ -31,6 +32,8 @@ class EA:
             if log:
                 print("Generation: ", i)
                 print("Fittest individual: ", min(self.pop, key=lambda x: x["fitness"])["fitness"])
+                self.save_fitness(save_file_extension)
+
             self.pop = self.create_new_population(mutation_rate, mutation_step, tournament_size)
         
         # Run and evaluate one last time
@@ -38,7 +41,7 @@ class EA:
         self.compute_fitness(alignments, cohesions)
         
         if save_population:
-            self.save_population()
+            self.save_population(save_file_extension)
 
     def compute_fitness(self, alignments, cohesions): #TODO finetune fitness function
         for i, agent in enumerate(self.pop):
@@ -50,6 +53,7 @@ class EA:
         new_pop = []
         for id in range(len(self.pop)):
             parent = self.tournament_selection(self.pop, k, 1)
+            #parent = self.fitness_proportionate_selection(1)
             offspring = copy.deepcopy(parent)
             self.mutate(offspring["params"], mu, ms)
             offspring["id"] = id
@@ -65,6 +69,13 @@ class EA:
             winners.append(pop[winner]) # Add fittest individual to output
         return winners[0] # TODO: fix output type to not be list when num = 1
     
+    def fitness_proportionate_selection(self, num):
+        fitnesses = np.array([i["fitness"] for i in self.pop])
+        scaled = -fitnesses + np.min(fitnesses) + np.max(fitnesses)
+        probabilities = scaled / np.sum(scaled)
+        return np.random.choice(self.pop, num, p=probabilities)[0]
+
+    
     def mutate(self, params, mutation_rate, mutation_step):
         w, b = params
         for weight in w:
@@ -79,15 +90,15 @@ class EA:
     def crossover(self, x, y):
         return # TODO: Implement crossover
 
-    def save_fitness(self, pop):
+    def save_fitness(self, save_file_extension):
         # Save fitness values of the population. At each step, all fitness values are printed to one line
-        pop_fitness = [i["fitness"] for i in pop]
-        with open("fitness_over_time.txt", "a") as f:
+        pop_fitness = [i["fitness"] for i in self.pop]
+        with open("fitness_over_time" + save_file_extension + ".txt", "a") as f:
             np.savetxt(f,pop_fitness, newline=' ')
             f.write("\n")
     
-    def save_population(self):
+    def save_population(self, save_file_extension):
         weights = np.array([i["params"][0] for i in self.pop], dtype=object)
         biases = np.array([i["params"][1] for i in self.pop], dtype=object)
         fitnesses = np.array([i["fitness"] for i in self.pop], dtype=object)
-        np.savez("population_info", weights = weights, biases = biases, fitnesses = fitnesses)
+        np.savez("population_info" + save_file_extension, weights = weights, biases = biases, fitnesses = fitnesses)
