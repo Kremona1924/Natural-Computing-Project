@@ -46,15 +46,38 @@ class EA:
             cohesion = np.mean(cohesions[i][-100:]) # Mean of last 30 cohesion values for this agent
             agent["fitness"] = cohesion * 20 + alignment
 
+    # def create_new_population(self, mu, ms, k):
+    #     new_pop = []
+    #     for id in range(len(self.pop)):
+    #         parent = self.tournament_selection(self.pop, k, 1)
+    #         offspring = copy.deepcopy(parent)
+    #         self.mutate(offspring["params"], mu, ms)
+    #         offspring["id"] = id
+    #         # TODO: Add crossover
+    #         new_pop.append(offspring)
+    #     return new_pop
+
     def create_new_population(self, mu, ms, k):
         new_pop = []
-        for id in range(len(self.pop)):
-            parent = self.tournament_selection(self.pop, k, 1)
-            offspring = copy.deepcopy(parent)
-            self.mutate(offspring["params"], mu, ms)
-            offspring["id"] = id
-            # TODO: Add crossover
-            new_pop.append(offspring)
+        while len(new_pop) < len(self.pop):
+            # Select two parents via tournament selection
+            parent1 = self.tournament_selection(self.pop, k, 1)
+            parent2 = self.tournament_selection(self.pop, k, 1)
+
+            # Generates child via crossover
+            child = self.crossover(parent1, parent2)
+
+            # Mutation on child
+            self.mutate(child['params'], mu, ms)
+
+            # Adds child to new population
+            child['id'] = len(new_pop)
+            new_pop.append(child)
+            if len(new_pop) < len(self.pop):  # If extra childs needed, reverse parents (no difference)
+                child = self.crossover(parent2, parent1)
+                self.mutate(child['params'], mu, ms)
+                child['id'] = len(new_pop)
+                new_pop.append(child)
         return new_pop
     
     def tournament_selection(self, pop, tournament_size, num):
@@ -76,8 +99,23 @@ class EA:
                 bias += np.random.normal(0, mutation_step) # TODO: set mutation size
         return w, b
     
-    def crossover(self, x, y):
-        return # TODO: Implement crossover
+    def crossover(self, parent1, parent2):
+        child_weights = []
+        child_biases = []
+
+
+        for w1, w2, b1, b2 in zip(parent1['params'][0], parent2['params'][0], parent1['params'][1], parent2['params'][1]):
+            # creates a matrix with false and true values depending on > or < 0.5
+            mask = np.random.rand(*w1.shape) > 0.5
+            child_weight = np.where(mask, w1, w2)
+            child_weights.append(child_weight)
+            
+            # creates an array with false and true values depending on > or < 0.5
+            mask = np.random.rand(b1.size) > 0.5
+            child_bias = np.where(mask, b1, b2)
+            child_biases.append(child_bias)
+        
+        return {'params': (child_weights, child_biases)}
 
     def save_fitness(self, pop):
         # Save fitness values of the population. At each step, all fitness values are printed to one line
