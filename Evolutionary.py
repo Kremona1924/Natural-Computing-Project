@@ -9,8 +9,19 @@ import math
 from simulation import boids_sim
 
 class EA:
-    def __init__(self, pop_size, layer_sizes) -> None:
+    def __init__(self, pop_size, layer_sizes, crossover_type) -> None:
         self.pop = self.initialise_population(pop_size, layer_sizes)
+        self.crossover_type = crossover_type
+    
+    def crossover(self, parent1, parent2):
+        if self.crossover_type == 'uniform':
+            return self.uniform_crossover(parent1, parent2)
+        elif self.crossover_type == 'single_point':
+            return self.single_point_crossover(parent1, parent2)
+        elif self.crossover_type == 'two_point':
+            return self.two_point_crossover(parent1, parent2)
+        elif self.crossover_type == 'none':
+            return self.no_crossover(parent1, parent2)
 
     def initialise_population(self, pop_size, layer_sizes):
         pop = []
@@ -61,14 +72,25 @@ class EA:
     def create_new_population(self, mu, ms, k):
         new_pop = []
         for id in range(len(self.pop)):
-            parent = self.tournament_selection(self.pop, k, 1)
-            #parent = self.fitness_proportionate_selection(1)
-            offspring = copy.deepcopy(parent)
-            self.mutate(offspring["params"], mu, ms)
-            offspring["id"] = id
-            # TODO: Add crossover
+            # no crossover population
+            if self.crossover_type == 'none':
+                parent = self.tournament_selection(self.pop, k, 1)
+                offspring = copy.deepcopy(parent)
+                self.mutate(offspring["params"], mu, ms)
+                offspring["id"] = id
+            # crossover population
+            else:
+                parent1 = self.tournament_selection(self.pop, k, 1)
+                parent2 = self.tournament_selection(self.pop, k, 1)
+                # opnieuw tot twee verschillende ouders voor crossover
+                while parent1['id'] == parent2['id']:
+                    parent2 = self.tournament_selection(self.pop, k, 1)
+                offspring = self.crossover(parent1, parent2)
+                self.mutate(offspring["params"], mu, ms)
+                offspring["id"] = id
             new_pop.append(offspring)
         return new_pop
+
     
     def tournament_selection(self, pop, tournament_size, num):
         winners = []
@@ -96,8 +118,61 @@ class EA:
                 bias += np.random.normal(0, mutation_step) # TODO: set mutation size
         return w, b
     
-    def crossover(self, x, y):
-        return # TODO: Implement crossover
+    def no_crossover(self, parent1, parent2):
+        # random keuze tussen parent1 of parent2
+        chosen_parent = parent1 if np.random.rand() > 0.5 else parent2
+        return {'params': copy.deepcopy(chosen_parent['params'])}
+
+    def uniform_crossover(self, parent1, parent2):
+        child_weights = []
+        child_biases = []
+        for w1, w2, b1, b2 in zip(parent1['params'][0], parent2['params'][0], parent1['params'][1], parent2['params'][1]):
+            # mask matrix met true/false values voor parent 1 of 2
+            mask = np.random.rand(*w1.shape) > 0.5
+            child_weight = np.where(mask, w1, w2)
+            child_weights.append(child_weight)
+            
+            # mask matrix met true/false values voor parent 1 of 2
+            mask = np.random.rand(b1.size) > 0.5 
+            child_bias = np.where(mask, b1, b2)
+            child_biases.append(child_bias)
+        
+        return {'params': (child_weights, child_biases)}
+
+    def single_point_crossover(self, parent1, parent2):
+        child_weights = []
+        child_biases = []
+        
+        # random punt voor crossover in de gewichten
+        crossover_point = np.random.randint(1, len(parent1['params'][0]))
+        
+        child_weights.extend(parent1['params'][0][:crossover_point])
+        child_weights.extend(parent2['params'][0][crossover_point:])
+        
+        # hetzelfde crossover punt voor de biases
+        child_biases.extend(parent1['params'][1][:crossover_point])
+        child_biases.extend(parent2['params'][1][crossover_point:])
+        
+        return {'params': (child_weights, child_biases)}
+
+    def two_point_crossover(self, parent1, parent2):
+        child_weights = []
+        child_biases = []
+        
+        # twee random punten voor de crossover
+        points = np.sort(np.random.randint(1, len(parent1['params'][0])-1, size=2))
+        
+        # combineert de gewichten, door middenstuk te wisselen
+        child_weights.extend(parent1['params'][0][:points[0]])
+        child_weights.extend(parent2['params'][0][points[0]:points[1]])
+        child_weights.extend(parent1['params'][0][points[1]:])
+        
+        # zelfde voor biases
+        child_biases.extend(parent1['params'][1][:points[0]])
+        child_biases.extend(parent2['params'][1][points[0]:points[1]])
+        child_biases.extend(parent1['params'][1][points[1]:])
+        
+        return {'params': (child_weights, child_biases)}
 
     def save_fitness(self, save_file_extension):
         # Save fitness values of the population. At each step, all fitness values are printed to one line
