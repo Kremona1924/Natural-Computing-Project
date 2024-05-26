@@ -100,9 +100,13 @@ class EA:
         return w, b
     
     def crossover(self, parent1, parent2):
+        """
+        Compleet random per weight van neuraal netwerk
+        --> Kijken of we lokale structuren vast kunnen houden en een punt kiezen om te splitten tussen p1 en p2
+        """
+
         child_weights = []
         child_biases = []
-
 
         for w1, w2, b1, b2 in zip(parent1['params'][0], parent2['params'][0], parent1['params'][1], parent2['params'][1]):
             # creates a matrix with false and true values depending on > or < 0.5
