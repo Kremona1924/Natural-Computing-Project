@@ -16,22 +16,27 @@ class EA:
         pop = []
         for id in range(pop_size):
             pop.append({"params" : NN.initialise_network(layer_sizes),
-                "fitness" : 0,
                 "original_id": id,
-                "id" : id})
+                "id" : id,
+                "fitness" : 0,
+                "cohesion_score": 0,
+                "alignment_score": 0
+            })
         return pop
 
 
     def run(self, num_generations, num_steps, mutation_rate, mutation_step, tournament_size, log = False, plot_chart=False, save_population = False, show_screen = False, save_file_extension = ""):
         for i in range(num_generations):
-            print("In generation ", i)
             sim = boids_sim(self.pop)
             alignments, cohesions = sim.run_with_screen(num_steps, plot_chart = plot_chart, show_screen=show_screen, log=log, filename="simulation_log.json")
             self.compute_fitness(alignments, cohesions)
 
             if log:
                 print("Generation: ", i)
+                print("Cohesion: ", np.mean([a["cohesion_score"] for a in self.pop]))
+                print("Alignment: ", np.mean([a["alignment_score"] for a in self.pop]))
                 print("Fittest individual: ", min(self.pop, key=lambda x: x["fitness"])["fitness"])
+                print("\n")
                 self.save_fitness(save_file_extension)
 
             self.pop = self.create_new_population(mutation_rate, mutation_step, tournament_size)
@@ -47,7 +52,11 @@ class EA:
         for i, agent in enumerate(self.pop):
             alignment = np.mean(alignments[i][-100:]) # Mean of last 30 alignment values for this agent
             cohesion = np.mean(cohesions[i][-100:]) # Mean of last 30 cohesion values for this agent
-            agent["fitness"] = cohesion * 20 + alignment
+            cohesion_score = (cohesion**2) * 20
+            
+            agent["cohesion_score"] = cohesion_score
+            agent["alignment_score"] = alignment
+            agent["fitness"] = cohesion_score + alignment
 
     def create_new_population(self, mu, ms, k):
         new_pop = []
