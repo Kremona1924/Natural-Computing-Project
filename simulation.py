@@ -10,8 +10,8 @@ import os
 
 
 # Define constants
-WIDTH = 450
-HEIGHT = 450
+WIDTH = 600
+HEIGHT = 600
 WALL_MARGIN = 50
 NUM_AGENTS = 15
 AGENT_SIZE = 5
