@@ -18,8 +18,8 @@ class EA:
             return self.uniform_crossover(parent1, parent2)
         elif self.crossover_type == 'single_point':
             return self.single_point_crossover(parent1, parent2)
-        elif self.crossover_type == 'two_point':
-            return self.two_point_crossover(parent1, parent2)
+        elif self.crossover_type == 'mean':
+            return self.mean_crossover(parent1, parent2)
         elif self.crossover_type == 'none':
             return self.no_crossover(parent1, parent2)
 
@@ -153,24 +153,12 @@ class EA:
         
         return {'params': (child_weights, child_biases)}
 
-    def two_point_crossover(self, parent1, parent2):
-        child_weights = []
-        child_biases = []
-        
-        # twee random punten voor de crossover
-        points = np.sort(np.random.randint(1, len(parent1['params'][0])-1, size=2))
-        
-        # combineert de gewichten, door middenstuk te wisselen
-        child_weights.extend(parent1['params'][0][:points[0]])
-        child_weights.extend(parent2['params'][0][points[0]:points[1]])
-        child_weights.extend(parent1['params'][0][points[1]:])
-        
-        # zelfde voor biases
-        child_biases.extend(parent1['params'][1][:points[0]])
-        child_biases.extend(parent2['params'][1][points[0]:points[1]])
-        child_biases.extend(parent1['params'][1][points[1]:])
-        
-        return {'params': (child_weights, child_biases)}
+    def mean_crossover(self, parent1, parent2):
+
+        w = [w1 + w2 for w1, w2 in zip(parent1["params"][0], parent2["params"][0])]
+        b = [b1 + b2 for b1, b2 in zip(parent1["params"][1], parent2["params"][1])]
+
+        return {'params': (w, b)}
 
     def save_fitness(self, save_file_extension):
         # Save fitness values of the population. At each step, all fitness values are printed to one line
