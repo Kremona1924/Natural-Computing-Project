@@ -143,15 +143,13 @@ class EA:
         child_weights = []
         child_biases = []
         
-        # random punt voor crossover in de gewichten
-        crossover_point = np.random.randint(1, len(parent1['params'][0]))
-        
-        child_weights.extend(parent1['params'][0][:crossover_point])
-        child_weights.extend(parent2['params'][0][crossover_point:])
-        
-        # hetzelfde crossover punt voor de biases
-        child_biases.extend(parent1['params'][1][:crossover_point])
-        child_biases.extend(parent2['params'][1][crossover_point:])
+        for w1, w2, b1, b2 in zip(parent1['params'][0], parent2['params'][0], parent1['params'][1], parent2['params'][1]):
+            # Random crossover point
+            crossover_point_w = np.random.randint(0, w1.shape[0])
+            crossover_point_b = np.random.randint(0, b1.shape[0])
+
+            child_weights.append(np.concatenate((w1[:crossover_point_w], w2[crossover_point_w:])))
+            child_biases.append(np.concatenate((b1[:crossover_point_b], b2[crossover_point_b:])))
         
         return {'params': (child_weights, child_biases)}
 
