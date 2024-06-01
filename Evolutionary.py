@@ -155,8 +155,8 @@ class EA:
 
     def mean_crossover(self, parent1, parent2):
 
-        w = [w1 + w2 for w1, w2 in zip(parent1["params"][0], parent2["params"][0])]
-        b = [b1 + b2 for b1, b2 in zip(parent1["params"][1], parent2["params"][1])]
+        w = [(w1 + w2)/2 for w1, w2 in zip(parent1["params"][0], parent2["params"][0])]
+        b = [(b1 + b2)/2 for b1, b2 in zip(parent1["params"][1], parent2["params"][1])]
 
         return {'params': (w, b)}
 
