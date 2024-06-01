@@ -192,7 +192,7 @@ class boids_sim:
         dist_sq = x2.reshape(-1, 1) - 2*xy + x2
         return np.sqrt(np.maximum(dist_sq, 0))
 
-    def run_with_screen(self, steps, show_screen = True, plot_chart=False, log=False, filename="simulation_log.json"):
+    def run_with_screen(self, steps, show_sim = True, log_states='log_none', filename="", log_dir="", last_gen=False):
         # # This does not work well, it removes the data in the file from the previous generations
         # # For now remove the log manually
         # if log:
@@ -200,7 +200,7 @@ class boids_sim:
 
         # Initialize pygame
 
-        if show_screen:
+        if show_sim:
             pygame.init()
             screen = pygame.display.set_mode((WIDTH, HEIGHT))
             pygame.display.set_caption("Simple Agent Simulation")
@@ -211,7 +211,7 @@ class boids_sim:
 
         for t in range(steps):
 
-            if show_screen:
+            if show_sim:
                 screen.fill(BG_COLOR)
                 for agent in self.agents:
                     agent.draw(screen)
@@ -224,8 +224,13 @@ class boids_sim:
                 pygame.display.flip()
                 clock.tick(200)
 
-            if log:
-                self.log_state(self.agents, filename)
+            if log_states == "log_all":
+                save_to = log_dir + "/all_states_" + filename + '.json'
+                self.log_state(self.agents, save_to)
+            elif log_states == "log_last":
+                if last_gen:
+                    save_to =  log_dir + '/last_states_' + filename + '.json'
+                    self.log_state(self.agents, save_to)
             
             cohesion_metric[t] = self.evaluate_cohesion()
 
@@ -234,13 +239,9 @@ class boids_sim:
                 alignment_metric[t][i] = self.evaluate_alignment(agent, neighbors)
                 agent.move(neighbors)
         
-        if plot_chart:
-            # TODO: add appropriate plots
-            #plt.plot()
-            #plt.show()
-            pass
         
-        if show_screen:
+
+        if show_sim:
             pygame.quit()
         
         return alignment_metric.T, cohesion_metric.T

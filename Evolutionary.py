@@ -1,28 +1,66 @@
 import numpy as np
+import os
 from matplotlib import pyplot as plt
 import seaborn as sns
 import pandas as pd
 import NN
 import copy
 import math
+import json
 
 from simulation import boids_sim
 
+def create_log_dir(dir="logs/run", suffix_len=2):
+    # Check if run dir already exists, add 1 until it doesn't
+    suffix=1
+    log_dir = f"{dir}{str(suffix).zfill(suffix_len)}"
+    while os.path.isdir(log_dir):
+        suffix += 1
+        log_dir = f"{dir}{str(suffix).zfill(suffix_len)}"
+    
+    os.mkdir(log_dir)
+    return log_dir
+
+class LogPerformance:
+    def __init__(self, num_gens, num_steps, mr, ms, ts, ct):
+        self.performance = {
+                "number_of_generations": num_gens,
+                "number_of_steps": num_steps,
+                "mutation_rate": mr,
+                "mutation_step": ms,
+                "tournament_size": ts,
+                "crossover_type": ct,
+                "mean_cohesion_over_time": [],
+                "mean_alignment_over_time": [],
+                "mean_fitness_over_time": [],
+                "fittest_individual_over_time": []
+            }
+    
+    def update(self, pop):
+        mean_cohesion = np.mean([a["cohesion_score"] for a in pop])
+        mean_alignment = np.mean([a["alignment_score"] for a in pop])
+        mean_fitness = np.mean([a["fitness"] for a in pop])
+        fittest_individual = min(pop, key=lambda x: x["fitness"])["fitness"]
+
+        self.performance["mean_cohesion_over_time"].append(mean_cohesion)
+        self.performance["mean_alignment_over_time"].append(mean_alignment)
+        self.performance["mean_fitness_over_time"].append(mean_fitness)
+        self.performance["fittest_individual_over_time"].append(fittest_individual)
+
+        return mean_cohesion, mean_alignment, fittest_individual
+
+    def get_performance(self):
+        return self.performance
+
+
 class EA:
-    def __init__(self, pop_size, layer_sizes, crossover_type) -> None:
+    def __init__(self, pop_size, layer_sizes, crossover_type, log_dir) -> None:
         self.pop = self.initialise_population(pop_size, layer_sizes)
         self.crossover_type = crossover_type
-    
-    def crossover(self, parent1, parent2):
-        if self.crossover_type == 'uniform':
-            return self.uniform_crossover(parent1, parent2)
-        elif self.crossover_type == 'single_point':
-            return self.single_point_crossover(parent1, parent2)
-        elif self.crossover_type == 'mean':
-            return self.mean_crossover(parent1, parent2)
-        elif self.crossover_type == 'none':
-            return self.no_crossover(parent1, parent2)
 
+        self.log_dir = log_dir
+        
+    
     def initialise_population(self, pop_size, layer_sizes):
         pop = []
         for id in range(pop_size):
@@ -35,31 +73,39 @@ class EA:
             })
         return pop
 
-
-    def run(self, num_generations, num_steps, mutation_rate, mutation_step, tournament_size, log = False, plot_chart=False, save_population = False, show_screen = False, save_file_extension = ""):
+    def run(self, num_generations, num_steps, mutation_rate, mutation_step, tournament_size, log_states = 'log_none', log_perf=False, show_sim = False, save_population = False, save_file_extension = "nospec"):
+    
+        track_performance = LogPerformance(num_generations, num_steps, mutation_rate, mutation_step, tournament_size, self.crossover_type)
+        
         for i in range(num_generations):
             sim = boids_sim(self.pop)
-            alignments, cohesions = sim.run_with_screen(num_steps, plot_chart = plot_chart, show_screen=show_screen, log=log, filename="simulation_log.json")
+            alignments, cohesions = sim.run_with_screen(num_steps, show_sim=show_sim, log_states=log_states, filename=save_file_extension, log_dir=self.log_dir, last_gen=False)
             self.compute_fitness(alignments, cohesions)
 
-            if log:
+            mc, ma, fi = track_performance.update(self.pop)
+
+            if show_sim:
                 print("Generation: ", i)
-                print("Cohesion: ", np.mean([a["cohesion_score"] for a in self.pop]))
-                print("Alignment: ", np.mean([a["alignment_score"] for a in self.pop]))
-                print("Fittest individual: ", min(self.pop, key=lambda x: x["fitness"])["fitness"])
+                print("Cohesion: ", mc)
+                print("Alignment: ", ma)
+                print("Fittest individual: ", fi)
                 print("\n")
-                self.save_fitness(save_file_extension)
 
             self.pop = self.create_new_population(mutation_rate, mutation_step, tournament_size)
         
         # Run and evaluate one last time
-        alignments, cohesions = sim.run_with_screen(num_steps, plot_chart = plot_chart, show_screen=show_screen, log=log, filename="simulation_log.json")
+        alignments, cohesions = sim.run_with_screen(num_steps, show_sim=show_sim, log_states=log_states, filename=save_file_extension, log_dir=self.log_dir, last_gen=True)
         self.compute_fitness(alignments, cohesions)
-        
+                
+        if log_perf:
+            _, _, _ = track_performance.update(self.pop)
+            performance = track_performance.get_performance()
+            self.save_performance(performance, save_file_extension)
+
         if save_population:
             self.save_population(save_file_extension)
 
-    def compute_fitness(self, alignments, cohesions): #TODO finetune fitness function
+    def compute_fitness(self, alignments, cohesions):
         for i, agent in enumerate(self.pop):
             alignment = np.mean(alignments[i][-100:]) # Mean of last 30 alignment values for this agent
             cohesion = np.mean(cohesions[i][-100:]) # Mean of last 30 cohesion values for this agent
@@ -68,7 +114,7 @@ class EA:
             agent["cohesion_score"] = cohesion_score
             agent["alignment_score"] = alignment
             agent["fitness"] = cohesion_score + alignment
-
+    
     def create_new_population(self, mu, ms, k):
         new_pop = []
         for id in range(len(self.pop)):
@@ -106,18 +152,16 @@ class EA:
         probabilities = scaled / np.sum(scaled)
         return np.random.choice(self.pop, num, p=probabilities)[0]
 
-    
-    def mutate(self, params, mutation_rate, mutation_step):
-        w, b = params
-        for weight in w:
-            if np.random.random() < mutation_rate:
-                weight += np.random.normal(0, mutation_step) # TODO: set mutation size
+    def crossover(self, parent1, parent2):
+        if self.crossover_type == 'uniform':
+            return self.uniform_crossover(parent1, parent2)
+        elif self.crossover_type == 'single_point':
+            return self.single_point_crossover(parent1, parent2)
+        elif self.crossover_type == 'mean':
+            return self.mean_crossover(parent1, parent2)
+        elif self.crossover_type == 'none':
+            return self.no_crossover(parent1, parent2)
 
-        for bias in b:
-            if np.random.random() < mutation_rate:
-                bias += np.random.normal(0, mutation_step) # TODO: set mutation size
-        return w, b
-    
     def no_crossover(self, parent1, parent2):
         # random keuze tussen parent1 of parent2
         chosen_parent = parent1 if np.random.rand() > 0.5 else parent2
@@ -160,15 +204,25 @@ class EA:
 
         return {'params': (w, b)}
 
-    def save_fitness(self, save_file_extension):
-        # Save fitness values of the population. At each step, all fitness values are printed to one line
-        pop_fitness = [i["fitness"] for i in self.pop]
-        with open("fitness_over_time" + save_file_extension + ".txt", "a") as f:
-            np.savetxt(f,pop_fitness, newline=' ')
-            f.write("\n")
+    def mutate(self, params, mutation_rate, mutation_step):
+        w, b = params
+        for weight in w:
+            if np.random.random() < mutation_rate:
+                weight += np.random.normal(0, mutation_step)
+
+        for bias in b:
+            if np.random.random() < mutation_rate:
+                bias += np.random.normal(0, mutation_step)
+        return w, b
+    
+    def save_performance(self, performance, save_file_extension): #TODO save more than fitness
+        # Save performance over time dictionary of the population.
+        save_to = self.log_dir + "/performance_" + save_file_extension + ".json"
+        with open(save_to, "w") as jf:
+            json.dump(performance, jf)
     
     def save_population(self, save_file_extension):
         weights = np.array([i["params"][0] for i in self.pop], dtype=object)
         biases = np.array([i["params"][1] for i in self.pop], dtype=object)
         fitnesses = np.array([i["fitness"] for i in self.pop], dtype=object)
-        np.savez("population_info" + save_file_extension, weights = weights, biases = biases, fitnesses = fitnesses)
+        np.savez(self.log_dir + "/pop_info_" + save_file_extension, weights = weights, biases = biases, fitnesses = fitnesses)

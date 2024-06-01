@@ -1,85 +1,47 @@
 import pygame
 import json
 from pygame.math import Vector2
+import math
 
 pygame.init()
 WIDTH = 450
 HEIGHT = 450
-win = pygame.display.set_mode((WIDTH, HEIGHT))
+AGENT_SIZE = 5
+AGENT_COLOR = (0, 0, 0)
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+clock = pygame.time.Clock()
 
-def draw_arrow(
-        surface: pygame.Surface,
-        start: pygame.Vector2,
-        end: pygame.Vector2,
-        color: pygame.Color,
-        body_width: int = 2,
-        head_width: int = 4,
-        head_height: int = 2,
-    ):
-    """Draw an arrow between start and end with the arrow head at the end.
-
-    Args:
-        surface (pygame.Surface): The surface to draw on
-        start (pygame.Vector2): Start position
-        end (pygame.Vector2): End position
-        color (pygame.Color): Color of the arrow
-        body_width (int, optional): Defaults to 2.
-        head_width (int, optional): Defaults to 4.
-        head_height (float, optional): Defaults to 2.
-    """
-    arrow = start - end
-    angle = arrow.angle_to(pygame.Vector2(0, -1))
-    body_length = arrow.length() - head_height
-
-    # Create the triangle head around the origin
-    head_verts = [
-        pygame.Vector2(0, head_height / 2),  # Center
-        pygame.Vector2(head_width / 2, -head_height / 2),  # Bottomright
-        pygame.Vector2(-head_width / 2, -head_height / 2),  # Bottomleft
-    ]
-    # Rotate and translate the head into place
-    translation = pygame.Vector2(0, arrow.length() - (head_height / 2)).rotate(-angle)
-    for i in range(len(head_verts)):
-        head_verts[i].rotate_ip(-angle)
-        head_verts[i] += translation
-        head_verts[i] += start
-
-    pygame.draw.polygon(surface, color, head_verts)
-
-    # Stop weird shapes when the arrow is shorter than arrow head
-    if arrow.length() >= head_height:
-        # Calculate the body rect, rotate and translate into place
-        body_verts = [
-            pygame.Vector2(-body_width / 2, body_length / 2),  # Topleft
-            pygame.Vector2(body_width / 2, body_length / 2),  # Topright
-            pygame.Vector2(body_width / 2, -body_length / 2),  # Bottomright
-            pygame.Vector2(-body_width / 2, -body_length / 2),  # Bottomleft
-        ]
-        translation = pygame.Vector2(0, body_length / 2).rotate(-angle)
-        for i in range(len(body_verts)):
-            body_verts[i].rotate_ip(-angle)
-            body_verts[i] += translation
-            body_verts[i] += start
-
-        pygame.draw.polygon(surface, color, body_verts)
+def draw(screen, xpos, ypos, xvel, yvel):
+        direction_angle = math.atan2(yvel, xvel)
+        
+        # Punt van de driehoek in de richting van beweging
+        front_point = (xpos + AGENT_SIZE * 2 * math.cos(direction_angle),
+                    ypos + AGENT_SIZE * 2 * math.sin(direction_angle))
+        
+        # Achterpunten van de driehoek
+        back_left = (xpos + AGENT_SIZE * math.cos(direction_angle + math.pi * 3/4),
+                    ypos + AGENT_SIZE * math.sin(direction_angle + math.pi * 3/4))
+        back_right = (xpos + AGENT_SIZE * math.cos(direction_angle - math.pi * 3/4),
+                    ypos + AGENT_SIZE * math.sin(direction_angle-math.pi*3/4))
+        
+        pygame.draw.polygon(screen, AGENT_COLOR, [front_point, back_left, back_right])
 
 def replay_simulation(filename="simulation_log.json"):
     with open(filename, "r") as file:
         for line in file:
             state_data = json.loads(line)
-            win.fill((255, 255, 255))  # Wis het scherm
+            screen.fill((255, 255, 255))  # Wis het scherm
 
             for agent_data in state_data:
-                start = Vector2(agent_data["xpos"], agent_data["ypos"])
-                end = start + Vector2(agent_data["xvel"], agent_data["yvel"]) * 10  # Aanpassen voor zichtbaarheid
-                draw_arrow(win, start, end, pygame.Color(0, 0, 0))
+                draw(screen, agent_data["xpos"], agent_data["ypos"], agent_data["xvel"], agent_data["yvel"])
 
             pygame.display.flip()
-            # add some sort of delay or something
+            clock.tick(100)
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     return  # Stop de replay als het venster wordt gesloten
                 
 if __name__ == "__main__":
-    replay_simulation()  # Call the function to start the replay
+    sim_name = r"logs\experiment01\run001\last_states_steps500_pop25_gens50_cot=none_mr1e-02_ms1e-02_ts1.json" 
+    replay_simulation(sim_name)  # Call the function to start the replay
