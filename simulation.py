@@ -29,6 +29,10 @@ def angle(v1, v2):
     angle_degrees = np.degrees(angle_radians)
     return angle_degrees
 
+def speed_normalizer(x):
+  min_speed = 0.2
+  return (1 / (1 + math.exp(-x))) + min_speed
+
 # Define Agent class
 class Agent:
     def __init__(self, id, x, y, params):
@@ -65,9 +69,10 @@ class Agent:
         for agent in agents:
             distance = math.sqrt((self.xpos - agent.xpos)**2 + (self.ypos - agent.ypos)**2)
             if distance < self.neighbor_dist:
-                angle = self.angle_between_agents([agent.xpos, agent.ypos])
-                if angle < self.fov_angle:
-                    neighbors.append(agent)
+                neighbors.append(agent)
+                # angle = self.angle_between_agents([agent.xpos, agent.ypos])
+                # if angle < self.fov_angle:
+                #     neighbors.append(agent)
         return neighbors 
 
     def move(self, neighbors):
@@ -93,7 +98,9 @@ class Agent:
         
             inputs = np.concatenate((position_vec, velocity_vec))
 
-        angular_vel = NN.feed_forward(self.params, inputs) # Angular velocity of angent, as determined by the NN. Range = (-1, 1).
+        net_out = NN.feed_forward(self.params, inputs)
+        angular_vel = net_out[0] # Angular velocity of angent, as determined by the NN. Range = (-1, 1).
+        speed = speed_normalizer(net_out[1])
         theta = angular_vel * self.max_ang_vel
 
         rotation_matrix = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
@@ -103,8 +110,8 @@ class Agent:
         self.yvel = rotated_velocity[1]
 
         # Update position
-        self.xpos += self.xvel
-        self.ypos += self.yvel
+        self.xpos += self.xvel * speed
+        self.ypos += self.yvel * speed
 
         if self.xpos > WIDTH:
             self.xpos -= WIDTH
