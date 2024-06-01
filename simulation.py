@@ -10,10 +10,10 @@ import os
 
 
 # Define constants
-WIDTH = 600
-HEIGHT = 600
+WIDTH = 500
+HEIGHT = 500
 WALL_MARGIN = 50
-NUM_AGENTS = 15
+NUM_AGENTS = 25
 AGENT_SIZE = 5
 BG_COLOR = (255, 255, 255)
 AGENT_COLOR = (0, 0, 0)
@@ -215,7 +215,7 @@ class boids_sim:
                         running = False
 
                 pygame.display.flip()
-                clock.tick(60)
+                clock.tick(200)
 
             if log:
                 self.log_state(self.agents, filename)

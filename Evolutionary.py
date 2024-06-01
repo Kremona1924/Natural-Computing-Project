@@ -63,7 +63,7 @@ class EA:
         for i, agent in enumerate(self.pop):
             alignment = np.mean(alignments[i][-100:]) # Mean of last 30 alignment values for this agent
             cohesion = np.mean(cohesions[i][-100:]) # Mean of last 30 cohesion values for this agent
-            cohesion_score = (cohesion**2) * 20
+            cohesion_score = (cohesion**2) * 10
             
             agent["cohesion_score"] = cohesion_score
             agent["alignment_score"] = alignment
