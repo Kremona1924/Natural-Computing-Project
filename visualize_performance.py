@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 
 #path to run folder
-run_folder = r"logs\experiment01\run01"
+run_folder = r"logs\experiment03\run03"
 
 file_path = run_folder + "/performance_*"
 match_path = glob.glob(file_path)

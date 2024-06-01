@@ -10,7 +10,7 @@ import json
 
 from simulation import boids_sim
 
-def create_log_dir(dir="logs/run", suffix_len=2):
+def create_log_dir(dir="logs/experiment", suffix_len=2):
     # Check if run dir already exists, add 1 until it doesn't
     suffix=1
     log_dir = f"{dir}{str(suffix).zfill(suffix_len)}"
