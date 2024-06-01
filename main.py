@@ -11,6 +11,8 @@ layer_sizes = [4, 4, 3, 1]
 num_generations = 50
 log_states = 'log_last' # log_last or log_all or log_none
 log_performance = True
+show_sim = True
+save_population = True
 
 # Variable Hyperparameters
 mutation_rate = 0.10
@@ -27,7 +29,7 @@ print("Under the extension name: ", filename)
 
 def main():
     ea = EA(pop_size, layer_sizes, crossover_type = list_crossover[crossover_index], log_dir=log_dir)
-    ea.run(num_generations, num_steps, mutation_rate, mutation_step, tournament_size, log_states=log_states, log_perf=log_performance, show_sim=False, save_population=True, save_file_extension=filename)
+    ea.run(num_generations, num_steps, mutation_rate, mutation_step, tournament_size, log_states, log_performance, show_sim, save_population, filename)
 
 start = time.time()
 main()

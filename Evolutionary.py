@@ -79,7 +79,6 @@ class EA:
         
         for i in range(num_generations):
             sim = boids_sim(self.pop)
-            last_gen = True if i == num_generations-1 else False
             alignments, cohesions = sim.run_with_screen(num_steps, show_sim=show_sim, log_states=log_states, filename=save_file_extension, log_dir=self.log_dir, last_gen=False)
             self.compute_fitness(alignments, cohesions)
 
