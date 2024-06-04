@@ -25,6 +25,7 @@ __pycache__/
 # Ignore all logs inside logs folder, but not the folder itself
 logs/*
 !logs/.gitignore
+Figures
 
 # Ignore other logs and temporary files
 *.log
