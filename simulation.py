@@ -1,6 +1,5 @@
 from matplotlib import pyplot as plt
 import pygame
-import random
 import math
 import numpy as np
 import time
@@ -29,9 +28,10 @@ def angle(v1, v2):
     angle_degrees = np.degrees(angle_radians)
     return angle_degrees
 
-def speed_normalizer(x):
-  min_speed = 0.2
-  return (1 / (1 + math.exp(-x))) + min_speed
+def speed_normalizer(x, scaler=2):
+    """Scales the tanh output to positive speed value"""
+
+    return 1.2 + (x/scaler)
 
 # Define Agent class
 class Agent:
@@ -42,15 +42,16 @@ class Agent:
         self.ypos = y
 
         # Generate random angle
-        angle = random.uniform(0, 2*math.pi)
+        angle = np.random.uniform(0, 2*math.pi)
         # Calculate velocity components based on angle and speed
         self.xvel = AGENT_SPEED * math.cos(angle)
         self.yvel = AGENT_SPEED * math.sin(angle)
-        
+
+        # Set starting speed to 1
+        self.speed = 1
+
         # Boid hyperparameters
         self.neighbor_dist = 100  # Adjust neighbor distance as needed
-        self.fov_angle = 100 # How far back it can look up to 180 degrees
-        self.turnfactor = 0.2
         self.max_ang_vel = np.pi / 60
 
     def angle_between_agents(self, agent_pos):
@@ -70,37 +71,40 @@ class Agent:
             distance = math.sqrt((self.xpos - agent.xpos)**2 + (self.ypos - agent.ypos)**2)
             if distance < self.neighbor_dist:
                 neighbors.append(agent)
-                # angle = self.angle_between_agents([agent.xpos, agent.ypos])
-                # if angle < self.fov_angle:
-                #     neighbors.append(agent)
         return neighbors 
 
     def move(self, neighbors):
-        avg_neighbor_pos = np.zeros(2)
-        avg_neighbor_vel = np.zeros(2)
+        tot_neighbor_pos = np.zeros(2)
+        tot_neighbor_vel = np.zeros(2)
+        #tot_speed = 0
 
         if len(neighbors) == 0:
             inputs = np.zeros(4)
+            #inputs = np.zeros(6)
 
         else:
-            for neigbor in neighbors:
-                avg_neighbor_pos += np.array([neigbor.xpos, neigbor.ypos])
-                avg_neighbor_vel += np.array([neigbor.xvel, neigbor.yvel])
+            for neighbor in neighbors:
+                tot_neighbor_pos += np.array([neighbor.xpos, neighbor.ypos])
+                tot_neighbor_vel += np.array([neighbor.xvel, neighbor.yvel])
+                #tot_speed += neighbor.speed
             
-            avg_neighbor_pos = avg_neighbor_pos/len(neighbors)
-            avg_neighbor_vel = avg_neighbor_vel/len(neighbors)
+            avg_neighbor_pos = tot_neighbor_pos/len(neighbors)
+            avg_neighbor_vel = tot_neighbor_vel/len(neighbors)
 
             position_vec = avg_neighbor_pos - np.array([self.xpos, self.ypos]) # Vector from the agent to the mean neighbor position
             velocity_vec = avg_neighbor_vel - np.array([self.xvel, self.yvel]) # Difference in velocity between agent and neighbors
 
             position_vec /= self.neighbor_dist
             velocity_vec /= AGENT_SPEED
-        
+
             inputs = np.concatenate((position_vec, velocity_vec))
+            
+            #avg_speed = np.array([tot_speed / len(neighbors), self.speed])
+            #inputs = np.concatenate((position_vec, velocity_vec, avg_speed))
 
         net_out = NN.feed_forward(self.params, inputs)
         angular_vel = net_out[0] # Angular velocity of angent, as determined by the NN. Range = (-1, 1).
-        speed = speed_normalizer(net_out[1])
+        
         theta = angular_vel * self.max_ang_vel
 
         rotation_matrix = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
@@ -109,9 +113,11 @@ class Agent:
         self.xvel = rotated_velocity[0]
         self.yvel = rotated_velocity[1]
 
+        self.speed = speed_normalizer(net_out[1])
+
         # Update position
-        self.xpos += self.xvel * speed
-        self.ypos += self.yvel * speed
+        self.xpos += self.xvel * self.speed
+        self.ypos += self.yvel * self.speed
 
         if self.xpos > WIDTH:
             self.xpos -= WIDTH
@@ -141,7 +147,7 @@ class boids_sim:
     def __init__(self, pop) -> None:
         #random.seed(1) # Ensure each sim starts the same
         self.pop_size = len(pop)
-        self.agents = np.array([Agent(agent_params["id"], random.uniform(0, WIDTH), random.uniform(0, HEIGHT), agent_params["params"]) for agent_params in pop])
+        self.agents = np.array([Agent(agent_params["id"], np.random.uniform(0, WIDTH), np.random.uniform(0, HEIGHT), agent_params["params"]) for agent_params in pop])
         
     def log_state(self, agents, filename="simulation_log.json"):
         state_data = []
@@ -151,7 +157,8 @@ class boids_sim:
                 "xpos": agent.xpos,
                 "ypos": agent.ypos,
                 "xvel": agent.xvel,
-                "yvel": agent.yvel
+                "yvel": agent.yvel,
+                "speed": agent.speed
             }
             state_data.append(agent_data)
         
@@ -250,4 +257,3 @@ class boids_sim:
 # sim = boids_sim(20, [4,1])
 # sim.run_with_screen(10000)
 
-# just some random text for me to understand github

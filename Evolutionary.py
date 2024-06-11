@@ -115,22 +115,33 @@ class EA:
             agent["alignment_score"] = alignment
             agent["fitness"] = cohesion_score + alignment
     
-    def create_new_population(self, mu, ms, k):
+    def create_new_population(self, mu, ms, ts):
         new_pop = []
         for id in range(len(self.pop)):
             # no crossover population
             if self.crossover_type == 'none':
-                parent = self.tournament_selection(self.pop, k, 1)
+                if ts == 1:
+                    parent = self.fitness_proportionate_selection()
+                else:
+                    parent = self.tournament_selection(self.pop, ts)
                 offspring = copy.deepcopy(parent)
                 self.mutate(offspring["params"], mu, ms)
                 offspring["id"] = id
             # crossover population
             else:
-                parent1 = self.tournament_selection(self.pop, k, 1)
-                parent2 = self.tournament_selection(self.pop, k, 1)
-                # opnieuw tot twee verschillende ouders voor crossover
-                while parent1['id'] == parent2['id']:
-                    parent2 = self.tournament_selection(self.pop, k, 1)
+                if ts == 1:
+                    parent1 = self.fitness_proportionate_selection()
+                    parent2 = self.fitness_proportionate_selection()
+                    # Ensure 2 different parents
+                    while parent1['id'] == parent2['id']:
+                        parent2 = self.fitness_proportionate_selection()
+                else:
+                    parent1 = self.tournament_selection(self.pop, ts)
+                    parent2 = self.tournament_selection(self.pop, ts)
+                    # Ensure 2 different parents
+                    while parent1['id'] == parent2['id']:
+                        parent2 = self.tournament_selection(self.pop, ts)
+                
                 offspring = self.crossover(parent1, parent2)
                 self.mutate(offspring["params"], mu, ms)
                 offspring["id"] = id
@@ -138,19 +149,16 @@ class EA:
         return new_pop
 
     
-    def tournament_selection(self, pop, tournament_size, num):
-        winners = []
-        for _ in range(num):
-            selection = np.random.choice(len(pop), size=tournament_size, replace=False) # Indices of individiuals in the tournament
-            winner = selection[np.argmin([pop[i]["fitness"] for i in selection])] # Find index of fittest individual
-            winners.append(pop[winner]) # Add fittest individual to output
-        return winners[0] # TODO: fix output type to not be list when num = 1
+    def tournament_selection(self, pop, tournament_size):
+        selection = np.random.choice(len(pop), size=tournament_size, replace=False) # Indices of individiuals in the tournament
+        winner = selection[np.argmin([pop[i]["fitness"] for i in selection])] # Find index of fittest individual
+        return pop[winner]
     
-    def fitness_proportionate_selection(self, num):
+    def fitness_proportionate_selection(self):
         fitnesses = np.array([i["fitness"] for i in self.pop])
         scaled = -fitnesses + np.min(fitnesses) + np.max(fitnesses)
         probabilities = scaled / np.sum(scaled)
-        return np.random.choice(self.pop, num, p=probabilities)[0]
+        return np.random.choice(self.pop, p=probabilities)
 
     def crossover(self, parent1, parent2):
         if self.crossover_type == 'uniform':
