@@ -23,13 +23,11 @@ __pycache__/
 *.dylib
 
 # Ignore all logs inside logs folder, but not the folder itself
-logs/*
 logsv1/
 logsv2/
 logs_div/
 logs_div_v2/
 logs_success/
-!logs/.gitignore
 
 # Ignore other logs and temporary files
 *.log
@@ -52,6 +50,6 @@ secrets.yml
 simulation_log.json
 
 # Ignore stored datafiles
-*.npy
-*.npz
+# *.npy
+# *.npz
 *.txt
