@@ -1,5 +1,6 @@
 import numpy as np
 import pygame
+
 import NN
 
 """
@@ -64,14 +65,21 @@ def draw_arrow(
 
         pygame.draw.polygon(surface, color, body_verts)
 
-def get_params(filename):
-    return np.load(filename, allow_pickle=True)
+def get_params(filename, agent_idx):
+    params = np.load(filename, allow_pickle=True)
 
+    return (params["weights"][agent_idx], params["biases"][agent_idx])
 
-params = get_params('params.npy')
+#################################################################################
+
+# Path to file that contains the parameters of a population (end with .npz)
+params_path = 'logs\example2\pop_info_steps500_pop25_gens50_cot=single_point_mr1e-01_ms1e-02_ts5.npz'
+
+# Get the weights and biases of an agent in the population using its index
+params = get_params(params_path, agent_idx=0)
 
 if params is None:
-    print('No params found in params.npy')
+    print('No params found in npz file')
     exit()
 
 pygame.init()
@@ -144,11 +152,12 @@ while running:
     win.blit(vel_label, vel + vel_dir * 15 - (12,5))
 
     NN_input = np.array([pos.x - center.x , center.y - pos.y , vel.x - center.x, center.y - vel.y]) / 100.0
-    theta = NN.feed_forward(params, NN_input)
+    theta = NN.feed_forward(params, NN_input)[0]
 
     rotation_matrix = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
     rotated_velocity = np.matmul(rotation_matrix, np.array([0.0, -1.0]))
 
-    draw_arrow(win, center, center + rotated_velocity * 100, (255,0,0),5,20,10)
+    print(np.shape(rotation_matrix))
+    draw_arrow(win, center, center + pygame.Vector2(rotated_velocity[0], rotated_velocity[1]) * 100, (255,0,0),5,20,10)
 
     pygame.display.flip()
