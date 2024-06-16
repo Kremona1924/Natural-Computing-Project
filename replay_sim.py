@@ -4,8 +4,8 @@ from pygame.math import Vector2
 import math
 
 pygame.init()
-WIDTH = 450
-HEIGHT = 450
+WIDTH = 500
+HEIGHT = 500
 AGENT_SIZE = 5
 AGENT_COLOR = (0, 0, 0)
 screen = pygame.display.set_mode((WIDTH, HEIGHT))

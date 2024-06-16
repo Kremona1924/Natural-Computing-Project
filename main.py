@@ -17,11 +17,11 @@ save_population = True
 
 # Variable Hyperparameters
 mutation_rate = 0.10
-mutation_step = 0.10
-tournament_size = 2
-crossover_index = 0 # kies voor nu 0, 1, 2 of 3, later for-loop
+mutation_step = 0.20
+tournament_size = 5
+crossover_index = 1 # kies voor nu 0, 1, 2 of 3, later for-loop
 
-log_dir = create_log_dir()
+log_dir = create_log_dir("logs/experiments")
 print("The files will be saved at location: ", log_dir)
 
 filename = f"steps{num_steps}_pop{pop_size}_gens{num_generations}_cot={list_crossover[crossover_index]}_mr{mutation_rate:.0e}_ms{mutation_step:.0e}_ts{tournament_size}"
