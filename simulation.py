@@ -1,22 +1,20 @@
-from matplotlib import pyplot as plt
 import pygame
 import math
 import numpy as np
-import time
 import NN
 import json
-import os
 
+'''
+This file contains the Agent and BoidsSim classes. It runs the simulation, with or without the pygame visualisation. Each generation
+in the EA a new simulation is initialized with the offspring of the previous simulation. 
+'''
 
 # Define constants
 WIDTH = 500
 HEIGHT = 500
-WALL_MARGIN = 50
-NUM_AGENTS = 25
 AGENT_SIZE = 5
 BG_COLOR = (255, 255, 255)
 AGENT_COLOR = (0, 0, 0)
-AGENT_SPEED = 2  # Adjust speed as needed
 
 def angle(v1, v2):
     # Calculate the angle between the two vectors
@@ -43,12 +41,13 @@ class Agent:
 
         # Generate random angle
         angle = np.random.uniform(0, 2*math.pi)
-        # Calculate velocity components based on angle and speed
-        self.xvel = AGENT_SPEED * math.cos(angle)
-        self.yvel = AGENT_SPEED * math.sin(angle)
 
-        # Set starting speed to 1
-        self.speed = 1
+        # Set starting speed to 1.5
+        self.speed = 1.5
+
+        # Calculate velocity components based on angle and speed
+        self.xvel = self.speed * math.cos(angle)
+        self.yvel = self.speed * math.sin(angle)
 
         # Boid hyperparameters
         self.neighbor_dist = 100  # Adjust neighbor distance as needed
@@ -95,15 +94,14 @@ class Agent:
             velocity_vec = avg_neighbor_vel - np.array([self.xvel, self.yvel]) # Difference in velocity between agent and neighbors
 
             position_vec /= self.neighbor_dist
-            velocity_vec /= AGENT_SPEED
 
             inputs = np.concatenate((position_vec, velocity_vec))
-            
-            #avg_speed = np.array([tot_speed / len(neighbors), self.speed])
-            #inputs = np.concatenate((position_vec, velocity_vec, avg_speed))
 
+        # Use the inputs as input to the agent network
         net_out = NN.feed_forward(self.params, inputs)
-        angular_vel = net_out[0] # Angular velocity of angent, as determined by the NN. Range = (-1, 1).
+        
+        # Get the turn factor as output [0] between -1 and 1
+        angular_vel = net_out[0] 
         
         theta = angular_vel * self.max_ang_vel
 
@@ -113,7 +111,8 @@ class Agent:
         self.xvel = rotated_velocity[0]
         self.yvel = rotated_velocity[1]
 
-        self.speed = speed_normalizer(net_out[1])
+        # Get the adjusted speed from the network output [1]
+        self.speed = speed_normalizer(net_out[1]) 
 
         # Update position
         self.xpos += self.xvel * self.speed
@@ -143,9 +142,8 @@ class Agent:
         
         pygame.draw.polygon(screen, AGENT_COLOR, [front_point, back_left, back_right])
 
-class boids_sim:
+class BoidsSim:
     def __init__(self, pop) -> None:
-        #random.seed(1) # Ensure each sim starts the same
         self.pop_size = len(pop)
         self.agents = np.array([Agent(agent_params["id"], np.random.uniform(0, WIDTH), np.random.uniform(0, HEIGHT), agent_params["params"]) for agent_params in pop])
         
@@ -184,8 +182,7 @@ class boids_sim:
         return angle((agent.xvel, agent.yvel), (neighbors_xvel, neighbors_yvel)) / 180.0
         
     def evaluate_cohesion(self):
-        # Cohesion is now defined as the mean distance to all boids per agent
-        # TODO: evaluate and tune this measure of cohesion
+        # Cohesion is defined as the mean distance to all boids per agent
         agent_positions = np.array([[agent.xpos, agent.ypos] for agent in self.agents])
         agent_positions /= float(max(WIDTH, HEIGHT)) # Scale positions by screen size to fall in range [0,1]
         dist_matrix = self.compute_dist_matrix(agent_positions)
@@ -199,14 +196,9 @@ class boids_sim:
         dist_sq = x2.reshape(-1, 1) - 2*xy + x2
         return np.sqrt(np.maximum(dist_sq, 0))
 
-    def run_with_screen(self, steps, show_sim = True, log_states='log_none', filename="", log_dir="", last_gen=False):
-        # # This does not work well, it removes the data in the file from the previous generations
-        # # For now remove the log manually
-        # if log:
-        #     open(filename, 'w').close()
-
+    def run_simulation(self, steps, show_sim = True, log_states='log_none', filename="", log_dir="", last_gen=False):
+        
         # Initialize pygame
-
         if show_sim:
             pygame.init()
             screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -222,11 +214,6 @@ class boids_sim:
                 screen.fill(BG_COLOR)
                 for agent in self.agents:
                     agent.draw(screen)
-
-                # Event handling
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        running = False
 
                 pygame.display.flip()
                 clock.tick(200)
@@ -246,14 +233,7 @@ class boids_sim:
                 alignment_metric[t][i] = self.evaluate_alignment(agent, neighbors)
                 agent.move(neighbors)
         
-        
-
         if show_sim:
             pygame.quit()
         
         return alignment_metric.T, cohesion_metric.T
-
-# Uncomment to run with screen
-# sim = boids_sim(20, [4,1])
-# sim.run_with_screen(10000)
-

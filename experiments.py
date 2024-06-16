@@ -2,7 +2,10 @@ from Evolutionary import EA, create_log_dir
 import time
 import numpy as np
 
-
+'''
+This script runs all of our experiments in one loop. We ran all experiments a total of 5 times, where each trial a different seed is used. 
+That seed is used across all 256 experiments as the random seed, to minimize 'luck'.
+'''
 
 # Fixed Hyperparameters
 num_steps = 500
@@ -24,7 +27,6 @@ crossover_type_experiments = ['none', 'uniform', 'single_point', 'mean']
 
 if number_of_runs > len(random_seeds):
     raise ValueError("\nNot enough random seeds for number of runs! This will give an error later in the run")
-
 
 start = time.time()
 

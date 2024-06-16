@@ -1,10 +1,13 @@
 import numpy as np
 
+'''
+This file contains two functions that initialise the network parameters and forward the inputs respectively. 
+'''
+
 def initialise_network(layer_sizes):
     weights = []
     biases = []
     for i in range(len(layer_sizes) - 1):
-        # TODO: better weight/bias initialisation
         weights.append(np.random.randn(layer_sizes[i], layer_sizes[i+1]))
         biases.append(np.random.randn(layer_sizes[i+1]))
     return weights, biases

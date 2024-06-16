@@ -1,7 +1,11 @@
 import pygame
 import json
-from pygame.math import Vector2
 import math
+
+'''
+This file replays the logged simulation(s) from a json file. Either the last simulation or all simulations, dependent on
+which logging option you used. 
+'''
 
 pygame.init()
 WIDTH = 500
@@ -43,5 +47,6 @@ def replay_simulation(filename="simulation_log.json"):
                     return  # Stop de replay als het venster wordt gesloten
                 
 if __name__ == "__main__":
-    sim_name = r"logs\experiment01\run001\last_states_steps500_pop25_gens50_cot=none_mr1e-02_ms1e-02_ts1.json" 
+    # Path to the simulation you want to replay. It should be a json file that starts with 'all_states_..' or 'last_states_..'
+    sim_name = r"logs/replay_example/last_states_steps500_pop25_gens50_cot=uniform_mr1e-01_ms2e-01_ts5.json" 
     replay_simulation(sim_name)  # Call the function to start the replay
